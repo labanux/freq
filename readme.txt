@@ -91,7 +91,7 @@ Docker Build GCloud
 3. Push: docker push gcr.io/lbn-financial-28pwg/freqos
 
 Docker Run on VM Instance:
-1. SSH
+1. SSH asia-southeast1-b
 2. docker pull gcr.io/lbn-financial-28pwg/freqos
 3. 
 
