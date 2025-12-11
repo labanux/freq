@@ -1,0 +1,27 @@
+# Ignore everything by default
+*
+
+# Keep gitignore itself
+!.gitignore
+
+# Top level files to keep
+!Dockerfile
+!readme.txt
+
+# Allow traversing into user_data
+!user_data/
+
+# But ignore everything inside user_data by default
+user_data/*
+
+# Allow specific files inside user_data
+!user_data/*.json
+
+# Strategies
+!user_data/strategies/
+!user_data/strategies/*.py
+!user_data/strategies/*.json
+
+# Hyperopts
+!user_data/hyperopts/
+!user_data/hyperopts/*.py

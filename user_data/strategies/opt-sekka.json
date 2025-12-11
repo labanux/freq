@@ -1,0 +1,32 @@
+{
+  "strategy_name": "OpSekka",
+  "params": {
+    "roi": {},
+    "stoploss": {
+      "stoploss": -0.99
+    },
+    "trailing": {
+      "trailing_stop": false,
+      "trailing_stop_positive": null,
+      "trailing_stop_positive_offset": 0.0,
+      "trailing_only_offset_is_reached": false
+    },
+    "max_open_trades": {
+      "max_open_trades": 1
+    },
+    "buy": {
+      "buy_rsi_period": 15,
+      "buy_rsi_threshold": 20,
+      "buy_vwap_gap": -0.019,
+      "buy_vwap_window": 47
+    },
+    "sell": {
+      "dca_step": 0.038,
+      "exit_rsi_threshold": 88,
+      "tp_threshold": 0.02
+    },
+    "protection": {}
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2025-11-26 12:29:23.136986+00:00"
+}

@@ -1,0 +1,30 @@
+{
+  "strategy_name": "OptLong",
+  "params": {
+    "roi": {},
+    "stoploss": {
+      "stoploss": -0.99
+    },
+    "trailing": {
+      "trailing_stop": false,
+      "trailing_stop_positive": null,
+      "trailing_stop_positive_offset": 0.0,
+      "trailing_only_offset_is_reached": false
+    },
+    "max_open_trades": {
+      "max_open_trades": 1
+    },
+    "buy": {
+      "DCA_STEP": 9,
+      "DCA_THRESHOLD": 0.1,
+      "RSI_THRESHOLD": 55,
+      "VWAP_GAP": -0.04
+    },
+    "sell": {
+      "RSI_TP": 60,
+      "TP_THRESHOLD": 0.04
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2025-12-09 17:24:50.661856+00:00"
+}

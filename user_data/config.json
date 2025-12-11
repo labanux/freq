@@ -1,0 +1,62 @@
+{
+  "datadir": "user_data/data",
+  "plot_export_filename": "user_data/plot/",
+  "exchange": {
+    "name": "binance",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "LTC/USDT"
+    ]
+  },
+  "pairlists": [
+    {
+      "method": "StaticPairList"
+    }
+  ],
+  "stake_currency": "USDT",
+  "stake_amount": "unlimited",
+  "__initial_balance": 100000,
+  "__timeframe": "1m",
+  "trading_mode": "futures",
+  "dry_run": true,
+  "max_open_trades": 1,
+  "position_adjustment_enable": true,
+  "use_exit_signal": true,
+  "exit_profit_only": false,
+  "ignore_buying_expiry": true,
+  "order_types": {
+    "entry": "market",
+    "exit": "market",
+    "stoploss": "market",
+    "emergency_exit": "market",
+    "stoploss_on_exchange": false
+  },
+  "entry_pricing": {
+    "price_side": "other",
+    "price_source": "last",
+    "use_order_book": false
+  },
+  "exit_pricing": {
+    "price_side": "other",
+    "price_source": "last",
+    "use_order_book": false
+  },
+  "api_server": {
+    "enabled": true,
+    "listen_ip_address": "0.0.0.0",
+    "listen_port": 8080,
+    "verbosity": "info",
+    "enable_openapi": true,
+    "jwt_secret_key": "supersecretkey123",
+    "CORS_origins": [
+      "*"
+    ],
+    "username": "admin",
+    "password": "admin"
+  },
+  "logger": {
+    "logfile": "/freqtrade/user_data/logs/freqtrade.log",
+    "level": "info"
+  }
+}
