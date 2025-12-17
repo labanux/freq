@@ -17,7 +17,7 @@
       "XRP/USDT:USDT"
     ]
   },
-  "max_open_trades": 1,
+  "max_open_trades": 7,
   "pairlists": [
     {
       "method": "StaticPairList"

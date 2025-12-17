@@ -103,3 +103,34 @@ docker run --rm \
   --strategy SekkaStrat \
   --timerange 20251001-20251031 \
   -p ZEC/USDT
+
+
+1620/3000:     95 trades. 95/0/0 Wins/Draws/Losses. Avg profit   8.89%. Median profit   8.18%. Total profit 3632.48002317 USDT ( 363.25%). Avg duration 3 days, 14:37:00 min. Objective: -95.00000
+
+
+    # Buy parameters:
+    buy_params = {
+        "DCA_STEP": 10,
+        "DCA_THRESHOLD": 0.06,
+        "RSI_THRESHOLD": 45,
+        "VWAP_GAP": -0.06,
+    }
+
+    # Sell parameters:
+    sell_params = {
+        "RSI_TP": 60,
+        "TP_THRESHOLD": 0.01,
+    }
+
+    # Stoploss parameters:
+    stoploss = -0.99  # value loaded from strategy
+
+    # Trailing stop parameters:
+    trailing_stop = False  # value loaded from strategy
+    trailing_stop_positive = None  # value loaded from strategy
+    trailing_stop_positive_offset = 0.0  # value loaded from strategy
+    trailing_only_offset_is_reached = False  # value loaded from strategy
+
+
+    # max_open_trades parameters:
+    max_open_trades = 7  # value loaded from strategy
