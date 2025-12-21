@@ -6,6 +6,7 @@
 
 # Top level files to keep
 !Dockerfile
+!docker-compose.yml
 !readme.txt
 
 # Allow traversing into user_data
