@@ -7,7 +7,7 @@ docker exec -it freqtrade freqtrade download-data \
   --trading-mode spot \
   --pairs SOL/USDT BTC/USDT ZEC/USDT XRP/USDT LTC/USDT ETH/USDT ENA/USDT \
   --timeframes 1h \
-  --timerange 20241001-20251220 --erase
+  --timerange 20231001-20251220 --erase
 
 # Download Futures
 docker exec -it freqtrade freqtrade download-data \
@@ -15,7 +15,7 @@ docker exec -it freqtrade freqtrade download-data \
   --trading-mode futures \
   --pairs SOL/USDT:USDT BTC/USDT:USDT ZEC/USDT:USDT XRP/USDT:USDT LTC/USDT:USDT ETH/USDT:USDT ENA/USDT:USDT \
   --timeframes 1h \
-  --timerange 20241001-20251220 --erase
+  --timerange 20231001-20251220 --erase
 
 docker exec -it freqtrade freqtrade download-data \
   --exchange binanceus \
@@ -57,11 +57,11 @@ docker compose run --rm freqai backtesting --config /freqtrade/user_data/config-
 
 # Hyper OPT
 docker exec -it freqtrade freqtrade hyperopt \
-  --strategy OptHour \
+  --strategy OptLong \
   --hyperopt-loss ZeroLossMaxTrades \
   --spaces buy sell \
-  --timerange 20241101-20251130 \
-  --config user_data/config-hour.json \
+  --timerange 20241101-20251219 \
+  --config user_data/config-long.json \
   -e 2000
 
 
