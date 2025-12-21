@@ -16,7 +16,7 @@ import logging
 
 
 class OptLong(IStrategy):
-    timeframe = "1h"
+    timeframe = "1m"
     informative_timeframes = []  # Single timeframe only - no multi-timeframe
     process_only_new_candles = True
     can_short = False  # Long-only strategy
