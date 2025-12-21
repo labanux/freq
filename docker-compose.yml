@@ -1,0 +1,62 @@
+---
+services:
+  freqtrade:
+    image: freqtradeorg/freqtrade:stable_plot
+    # image: freqtradeorg/freqtrade:develop
+    # Use plotting image
+    # image: freqtradeorg/freqtrade:develop_plot
+    # # Enable GPU Image and GPU Resources (only relevant for freqAI)
+    # # Make sure to uncomment the whole deploy section
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    # Build step - only needed when additional dependencies are needed
+    # build:
+    #   context: .
+    #   dockerfile: "./docker/Dockerfile.custom"
+    restart: unless-stopped
+    container_name: freqtrade
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    # Expose api on port 8080 (localhost only)
+    # Please read the https://www.freqtrade.io/en/stable/rest-api/ documentation
+    # for more information.
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    # -----------------------------------------------------------------
+    # THE FIX IS HERE:
+    # Changed "trade" to "webserver" to enable the full UI
+    # -----------------------------------------------------------------
+    command: >
+      webserver --logfile /freqtrade/user_data/logs/freqtrade.log --config /freqtrade/user_data/config.json
+    #  --strategy Sekka
+    #  --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite
+
+    #ftshort:
+    #  image: freqtradeorg/freqtrade:stable_plot
+    #  restart: unless-stopped
+    #  container_name: ftshort
+    #  volumes:
+    #    - "./ft_short:/freqtrade/ft_short"
+    #  # Expose api on port 8181 (localhost only)
+    #  ports:
+    #    - "127.0.0.1:8181:8080"
+
+    #  command: >-
+    #    webserver --userdir /freqtrade/ft_short --logfile /freqtrade/ft_short/logs/freqtrade.log --config /freqtrade/ft_short/config.json
+    #freqai:
+    #  image: freqtradeorg/freqtrade:stable_freqai
+    #  restart: unless-stopped
+    #  container_name: freqai
+    #  volumes:
+    #    - "./user_data:/freqtrade/user_data"
+    #  # Expose api on port 8082 (localhost only)
+    #  ports:
+    #    - "127.0.0.1:8082:8080"
+    #  command: >
+    #    trade --config /freqtrade/user_data/config-ai.json --strategy SekkaAi
