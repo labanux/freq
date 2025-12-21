@@ -7,7 +7,7 @@ docker exec -it freqtrade freqtrade download-data \
   --trading-mode spot \
   --pairs SOL/USDT BTC/USDT ZEC/USDT XRP/USDT LTC/USDT ETH/USDT ENA/USDT \
   --timeframes 1h \
-  --timerange 20241001-20251210 --erase
+  --timerange 20241001-20251220 --erase
 
 # Download Futures
 docker exec -it freqtrade freqtrade download-data \
@@ -15,7 +15,7 @@ docker exec -it freqtrade freqtrade download-data \
   --trading-mode futures \
   --pairs SOL/USDT:USDT BTC/USDT:USDT ZEC/USDT:USDT XRP/USDT:USDT LTC/USDT:USDT ETH/USDT:USDT ENA/USDT:USDT \
   --timeframes 1h \
-  --timerange 20241001-20251210 --erase
+  --timerange 20241001-20251220 --erase
 
 docker exec -it freqtrade freqtrade download-data \
   --exchange binanceus \
@@ -43,7 +43,7 @@ docker exec -it freqtrade freqtrade backtesting \
 docker exec -it freqtrade freqtrade backtesting \
   --strategy SekkaLong \
   --dry-run-wallet 100000 \
-  --timerange 20241101-20251130 \
+  --timerange 20241101-20251219 \
   --config user_data/config-long.json \
   --pairs BTC/USDT:USDT
 
@@ -134,3 +134,25 @@ docker run --rm \
 
     # max_open_trades parameters:
     max_open_trades = 7  # value loaded from strategy
+
+## GIT
+  On VM:
+  ssh-keygen -t ed25519 -C "gcloud-vm"
+  cat ~/.ssh/id_ed25519.pub
+
+## On GitHub:
+  Add Key to GitHub
+  Go to your GitHub Repository -> Settings.
+  Click Deploy keys (sidebar) -> Add deploy key.
+  Title: GCloud VM
+  Key: Paste the key you copied.
+  Allow write access? (Optional, only if you plan to push changes from the VM).
+  Click Add key.
+
+## On VM:
+git clone git@github.com:labanux/freq.git
+or
+git clone https://github.com/oktolibrasilaban/ft_userdata.git
+
+cd dir name
+git pull
