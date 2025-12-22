@@ -28,14 +28,14 @@ class SekkaLong(IStrategy):
 
     startup_candle_count = 20
 
-    TP_THRESHOLD = 0.01
+    TP_THRESHOLD = 0.02
     DCA_THRESHOLD = 0.06
     DCA_STEP = 10
     RSI_PERIOD = 14
     VWAP_WINDOW = 14
 
-    VWAP_GAP = -0.06
-    RSI_THRESHOLD = 45
+    VWAP_GAP = -0.05
+    RSI_THRESHOLD = 40
     RSI_TP = 60
 
     minimal_roi = {}

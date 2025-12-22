@@ -35,7 +35,7 @@ docker compose restart freqtrade
 docker exec -it freqtrade freqtrade backtesting \
   --strategy SekkaHour \
   --dry-run-wallet 100000 \
-  --timerange 20241101-20251130 \
+  --timerange 20231101-20251130 \
   --config user_data/config-hour.json \
   -p XRP/USDT 
 
@@ -43,7 +43,7 @@ docker exec -it freqtrade freqtrade backtesting \
 docker exec -it freqtrade freqtrade backtesting \
   --strategy SekkaLong \
   --dry-run-wallet 100000 \
-  --timerange 20241101-20251219 \
+  --timerange 20231101-20251219 \
   --config user_data/config-long.json \
   --pairs BTC/USDT:USDT
 
@@ -60,9 +60,9 @@ docker exec -it freqtrade freqtrade hyperopt \
   --strategy OptLong \
   --hyperopt-loss ZeroLossMaxTrades \
   --spaces buy sell \
-  --timerange 20241101-20251219 \
+  --timerange 20231101-20251219 \
   --config user_data/config-long.json \
-  -e 2000
+  -e 3000
 
 
 docker compose run --rm freqtrade hyperopt \

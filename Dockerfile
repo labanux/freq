@@ -5,16 +5,16 @@ FROM freqtradeorg/freqtrade:stable_plot
 USER root
 
 # 1. Copy Strategies
-COPY --chown=ftuser:ftuser user_data/strategies /freqtrade/user_data/strategies
+##COPY --chown=ftuser:ftuser user_data/strategies /freqtrade/user_data/strategies
 
 # 2. Copy Hyperopt definitions (Important if using custom loss functions)
-COPY --chown=ftuser:ftuser user_data/hyperopts /freqtrade/user_data/hyperopts
+#COPY --chown=ftuser:ftuser user_data/hyperopts /freqtrade/user_data/hyperopts
 
 # 3. Copy FreqAI models (Important if using FreqAI)
 #COPY --chown=ftuser:ftuser user_data/freqaimodels /freqtrade/user_data/freqaimodels
 
 # 4. Copy Configurations
-COPY --chown=ftuser:ftuser user_data/*.json /freqtrade/user_data/
+#COPY --chown=ftuser:ftuser user_data/*.json /freqtrade/user_data/
 
 #COPY --chown=ftuser:ftuser readme.txt .
 
