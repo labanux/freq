@@ -3,6 +3,8 @@
   "plot_export_filename": "user_data/plot/",
   "exchange": {
     "name": "binance",
+    "key": "",
+    "secret": "",
     "ccxt_config": {
       "timeout": 30000
     },
