@@ -19,6 +19,11 @@
       "XRP/USDT:USDT"
     ]
   },
+  "telegram": {
+    "enabled": true,
+    "token": "",
+    "chat_id": ""
+  },
   "max_open_trades": 7,
   "pairlists": [
     {
@@ -31,7 +36,8 @@
   "__timeframe": "1h",
   "trading_mode": "futures",
   "margin_mode": "isolated",
-  "dry_run": true,
+  "dry_run": false,
+  "initial_state": "running",
   "position_adjustment_enable": true,
   "use_exit_signal": true,
   "exit_profit_only": false,
