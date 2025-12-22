@@ -13,6 +13,8 @@ import pandas as pd
 import numpy as np
 import talib.abstract as ta
 import logging
+from datetime import datetime
+from typing import Optional
 
 
 class OptLong(IStrategy):
@@ -43,6 +45,7 @@ class OptLong(IStrategy):
 
     minimal_roi = {}
     stoploss = -0.99
+    LEVERAGE = 5
     #max_entry_position_adjustment = -1
 
     logger = logging.getLogger(__name__)
@@ -209,3 +212,8 @@ class OptLong(IStrategy):
         #    return "STOP_LOSS_AFTER_DCA"
 
         return None
+
+    def leverage(self, pair: str, current_time: datetime, current_rate: float,
+                 proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
+                 **kwargs) -> float:
+        return self.LEVERAGE
