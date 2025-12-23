@@ -156,3 +156,41 @@ git clone https://github.com/oktolibrasilaban/ft_userdata.git
 
 cd dir name
 git pull
+
+If edited on server:
+- git stash
+- git pull
+- git stash pop
+
+IF permission denied:
+sudo chown -R $USER:$USER /freqtrade/user_data
+
+## RUN ON PROD #####
+# 1. Stop and remove existing container
+docker stop freqtrade-main
+docker rm freqtrade-main
+docker restart freqtrade-main
+docker logs freqtrade-main
+
+# 2. Re-run with port mapping (-p 8080:8080) & correct user ID if needed
+docker run -d \
+  --name freqtrade-main \
+  --restart unless-stopped \
+  -p 8080:8080 \
+  -v $(pwd)/user_data:/freqtrade/user_data \
+  freqtradeorg/freqtrade:stable \
+  trade \
+  --config /freqtrade/user_data/config-long.json \
+  --strategy SekkaLong
+
+# Start Bot
+curl -X POST http://localhost:8080/api/v1/start \
+     -H "Content-Type: application/json" \
+     -u admin:admin
+
+
+## TELEGRAM
+Step 1: Get Token & Chat ID
+
+Token: Message @BotFather on Telegram. Send /newbot. Follow steps. You get a token like 123456789:ABCdef....
+Chat ID: Message @userinfobot (or your new bot). Get your numeric ID (e.g., 12345678).
