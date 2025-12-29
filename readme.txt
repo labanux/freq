@@ -5,9 +5,9 @@ freqtrade backtesting --config user_data/config.json --strategy Sekka
 docker exec -it freqtrade freqtrade download-data \
   --exchange binance \
   --trading-mode spot \
-  --pairs SOL/USDT BTC/USDT ZEC/USDT XRP/USDT LTC/USDT ETH/USDT ENA/USDT \
   --timeframes 1h \
-  --timerange 20231001-20251220 --erase
+  --timerange 20230101-20251228 --erase \
+  --pairs SOL/USDT BTC/USDT ZEC/USDT XRP/USDT LTC/USDT ETH/USDT ENA/USDT
 
 # Download Futures
 docker exec -it freqtrade freqtrade download-data \
@@ -15,7 +15,10 @@ docker exec -it freqtrade freqtrade download-data \
   --trading-mode futures \
   --pairs SOL/USDT:USDT BTC/USDT:USDT ZEC/USDT:USDT XRP/USDT:USDT LTC/USDT:USDT ETH/USDT:USDT ENA/USDT:USDT \
   --timeframes 1h \
-  --timerange 20231001-20251220 --erase
+  --timerange 20230101-20251228 --erase
+
+# DOWNLOAD spot Hyperliquid
+docker exec -it freqtrade python3 /freqtrade/user_data/strategies/download_hl.py
 
 docker exec -it freqtrade freqtrade download-data \
   --exchange binanceus \
@@ -43,7 +46,7 @@ docker exec -it freqtrade freqtrade backtesting \
 docker exec -it freqtrade freqtrade backtesting \
   --strategy SekkaLong \
   --dry-run-wallet 100000 \
-  --timerange 20231101-20251219 \
+  --timerange 20230201-20251228 \
   --config user_data/config-long.json \
   --pairs BTC/USDT:USDT
 
@@ -104,36 +107,6 @@ docker run --rm \
   --timerange 20251001-20251031 \
   -p ZEC/USDT
 
-
-1620/3000:     95 trades. 95/0/0 Wins/Draws/Losses. Avg profit   8.89%. Median profit   8.18%. Total profit 3632.48002317 USDT ( 363.25%). Avg duration 3 days, 14:37:00 min. Objective: -95.00000
-
-
-    # Buy parameters:
-    buy_params = {
-        "DCA_STEP": 10,
-        "DCA_THRESHOLD": 0.06,
-        "RSI_THRESHOLD": 45,
-        "VWAP_GAP": -0.06,
-    }
-
-    # Sell parameters:
-    sell_params = {
-        "RSI_TP": 60,
-        "TP_THRESHOLD": 0.01,
-    }
-
-    # Stoploss parameters:
-    stoploss = -0.99  # value loaded from strategy
-
-    # Trailing stop parameters:
-    trailing_stop = False  # value loaded from strategy
-    trailing_stop_positive = None  # value loaded from strategy
-    trailing_stop_positive_offset = 0.0  # value loaded from strategy
-    trailing_only_offset_is_reached = False  # value loaded from strategy
-
-
-    # max_open_trades parameters:
-    max_open_trades = 7  # value loaded from strategy
 
 ## GIT
   On VM:

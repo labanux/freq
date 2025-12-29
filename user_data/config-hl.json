@@ -1,0 +1,87 @@
+{
+  "datadir": "user_data/data",
+  "plot_export_filename": "user_data/plot/",
+  "exchange": {
+    "name": "hyperliquid",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {
+      "timeout": 30000,
+      "options": {
+        "fetchMarkets": {
+          "hip3": {
+            "limit": 10000
+          }
+        }
+      }
+    },
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "BTC/USDC",
+      "ETH/USDC",
+      "SOL/USDC",
+      "HYPE/USDC"
+    ]
+  },
+  "telegram": {
+    "enabled": true,
+    "token": "",
+    "chat_id": ""
+  },
+  "max_open_trades": 4,
+  "pairlists": [
+    {
+      "method": "StaticPairList"
+    }
+  ],
+  "stake_currency": "USDC",
+  "stake_amount": "unlimited",
+  "__initial_balance": 100000,
+  "__timeframe": "1h",
+  "trading_mode": "spot",
+  "dry_run": true,
+  "initial_state": "running",
+  "position_adjustment_enable": true,
+  "use_exit_signal": true,
+  "exit_profit_only": false,
+  "ignore_buying_expiry": true,
+  "order_types": {
+    "entry": "limit",
+    "exit": "limit",
+    "stoploss": "limit",
+    "emergency_exit": "market",
+    "stoploss_on_exchange": false
+  },
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  "api_server": {
+    "enabled": true,
+    "listen_ip_address": "0.0.0.0",
+    "listen_port": 8080,
+    "verbosity": "info",
+    "enable_openapi": true,
+    "jwt_secret_key": "supersecretkey123",
+    "CORS_origins": [
+      "*"
+    ],
+    "username": "admin",
+    "password": "admin"
+  },
+  "logger": {
+    "logfile": "/freqtrade/user_data/logs/freqtrade.log",
+    "level": "info"
+  }
+}
