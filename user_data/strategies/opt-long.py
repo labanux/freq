@@ -216,4 +216,4 @@ class OptLong(IStrategy):
     def leverage(self, pair: str, current_time: datetime, current_rate: float,
                  proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
                  **kwargs) -> float:
-        return self.LEVERAGE
+        return self.LEVERAGE.value
