@@ -63,9 +63,9 @@ docker exec -it freqtrade freqtrade hyperopt \
   --strategy OptLong \
   --hyperopt-loss ZeroLossMaxTrades \
   --spaces buy sell \
-  --timerange 20231101-20251219 \
+  --timerange 20230101-20251228 \
   --config user_data/config-long.json \
-  -e 3000
+  -e 5000
 
 
 docker compose run --rm freqtrade hyperopt \
@@ -167,3 +167,15 @@ Step 1: Get Token & Chat ID
 
 Token: Message @BotFather on Telegram. Send /newbot. Follow steps. You get a token like 123456789:ABCdef....
 Chat ID: Message @userinfobot (or your new bot). Get your numeric ID (e.g., 12345678).
+
+## Increase SWAP
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+
+30 Dec
+docker exec -it freqtrade freqtrade hyperopt --strategy OptLong --hyperopt-loss ZeroLossMaxTrades --spaces buy sell --timerange 20230101-20251228 --config user_data/config-long.json -e 5000
+Change to include Leverage
