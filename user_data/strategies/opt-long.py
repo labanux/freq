@@ -45,7 +45,7 @@ class OptLong(IStrategy):
 
     minimal_roi = {}
     stoploss = -0.99
-    LEVERAGE = 1
+    LEVERAGE = IntParameter(1, 5, default=1, space="sell", optimize=True)
     #max_entry_position_adjustment = -1
 
     logger = logging.getLogger(__name__)
