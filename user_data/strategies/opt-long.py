@@ -32,20 +32,22 @@ class OptLong(IStrategy):
 
     # LONG Parameters
     TP_THRESHOLD = DecimalParameter(0.01, 0.10, default=0.04, decimals=2, space="sell", optimize=True)
-    DCA_THRESHOLD = DecimalParameter(0.01, 0.10, default=0.01, decimals=2, space="buy", optimize=True)
-    DCA_STEP = IntParameter(1, 10, default=5, space="buy", optimize=True)
-    
-    VWAP_GAP = DecimalParameter(-0.10, -0.01, default=-0.03, decimals=2, space="buy", optimize=True)
-    RSI_THRESHOLD = IntParameter(20, 60, default=48, space="buy", optimize=True)
     RSI_TP = IntParameter(60, 90, default=72, space="sell", optimize=True)
 
+    DCA_THRESHOLD = DecimalParameter(0.01, 0.10, default=0.01, decimals=2, space="buy", optimize=True)
+    DCA_STEP = IntParameter(1, 10, default=5, space="buy", optimize=True)
+    VWAP_GAP = DecimalParameter(-0.10, -0.01, default=-0.03, decimals=2, space="buy", optimize=True)
+    RSI_THRESHOLD = IntParameter(20, 60, default=48, space="buy", optimize=True)
+    
+
     # Fixed Constants
-    RSI_PERIOD = 14
-    VWAP_WINDOW = 14
+    RSI_PERIOD = IntParameter(6, 24, default=14, space="buy", optimize=True)
+    VWAP_WINDOW = IntParameter(6, 24, default=14, space="buy", optimize=True)
 
     minimal_roi = {}
     stoploss = -0.99
-    LEVERAGE = IntParameter(1, 5, default=1, space="sell", optimize=True)
+    LEVERAGE = 1
+
     #max_entry_position_adjustment = -1
 
     logger = logging.getLogger(__name__)
@@ -216,4 +218,4 @@ class OptLong(IStrategy):
     def leverage(self, pair: str, current_time: datetime, current_rate: float,
                  proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
                  **kwargs) -> float:
-        return self.LEVERAGE.value
+        return self.LEVERAGE
