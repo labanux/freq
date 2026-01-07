@@ -24,6 +24,7 @@ TIMERANGE="20220101-20251230"
 CONFIG="user_data/config-long.json"
 EPOCHS=1000
 JOBS=-1  # -1 = use all cores
+AUTO_STOP=false  # Auto-shutdown VM after completion
 
 #-------------------------------------------------------------------------------
 # Parse command line arguments
@@ -58,6 +59,10 @@ while [[ $# -gt 0 ]]; do
             JOBS="$2"
             shift 2
             ;;
+        --auto-stop)
+            AUTO_STOP=true
+            shift
+            ;;
         --help|-h)
             echo "Usage: ./run-hyperopt.sh [OPTIONS]"
             echo ""
@@ -68,7 +73,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --timerange, -t   Time range (default: 20230101-20251230)"
             echo "  --config, -c      Config file (default: user_data/config-long.json)"
             echo "  --epochs, -e      Number of epochs (default: 5000)"
-            echo "  --jobs, -j        Number of parallel jobs, 0=all cores (default: 0)"
+            echo "  --jobs, -j        Number of parallel jobs, -1=all cores (default: -1)"
+            echo "  --auto-stop       Shutdown VM after completion"
             echo "  --help, -h        Show this help"
             exit 0
             ;;
@@ -159,3 +165,12 @@ echo ""
 echo -e "To view results locally:"
 echo -e "  docker compose run --rm freqtrade hyperopt-list --best -n 10 --config ${CONFIG}"
 
+#-------------------------------------------------------------------------------
+# Auto-stop VM if requested
+#-------------------------------------------------------------------------------
+if [ "$AUTO_STOP" = true ]; then
+    echo ""
+    echo -e "${YELLOW}Auto-stop enabled. Shutting down VM in 30 seconds...${NC}"
+    sleep 30
+    sudo shutdown -h now
+fi

@@ -115,16 +115,20 @@ case "$COMMAND" in
     
     run-bg)
         echo -e "${YELLOW}Starting hyperopt in background on ${INSTANCE_NAME}...${NC}"
+        echo -e "${YELLOW}VM will auto-stop when hyperopt completes.${NC}"
         if [ -n "$HYPEROPT_ARGS" ]; then
             echo -e "Options: ${YELLOW}${HYPEROPT_ARGS}${NC}"
         fi
         gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
-            "cd /opt/freqtrade && sudo nohup ./run-hyperopt.sh $HYPEROPT_ARGS > /opt/freqtrade/hyperopt.log 2>&1 &"
+            "cd /opt/freqtrade && sudo nohup ./run-hyperopt.sh --auto-stop $HYPEROPT_ARGS > /opt/freqtrade/hyperopt.log 2>&1 &"
         echo -e "${GREEN}✓ Hyperopt started in background!${NC}"
         echo ""
         echo -e "Commands to monitor:"
         echo -e "  ${YELLOW}./gcloud-manage-vm.sh check${NC}   - Check if running"
         echo -e "  ${YELLOW}./gcloud-manage-vm.sh output${NC}  - View output log"
+        echo -e "  ${YELLOW}./gcloud-manage-vm.sh status${NC}  - Check VM status"
+        echo ""
+        echo -e "${GREEN}Note: VM will automatically stop after hyperopt completes.${NC}"
         ;;
     
     check)
