@@ -1,0 +1,175 @@
+#!/bin/bash
+#===============================================================================
+# GCloud VM Manager for Freqtrade
+# 
+# Quick commands to manage your Spot VM
+#
+# Usage:
+#   ./gcloud-manage-vm.sh [command] [options]
+#
+# Commands:
+#   ssh      - Connect to VM
+#   run      - Run hyperopt (supports passing hyperopt options)
+#   update   - Pull latest code
+#   start    - Start stopped VM
+#   stop     - Stop VM (saves costs)
+#   delete   - Delete VM
+#   status   - Show VM status
+#   logs     - View setup logs
+#   copy     - Copy hyperopt results from VM
+#
+# Examples:
+#   ./gcloud-manage-vm.sh run
+#   ./gcloud-manage-vm.sh run --epochs 500 --strategy SekkaLong
+#   ./gcloud-manage-vm.sh run --instance my-vm --zone us-west1-a --epochs 1000
+#===============================================================================
+
+# Default configuration
+INSTANCE_NAME="freqtrade-hyperopt"
+ZONE="asia-southeast1-b"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Get the command
+COMMAND="$1"
+shift 2>/dev/null || true
+
+# Parse --instance and --zone from remaining args, collect hyperopt args
+HYPEROPT_ARGS=""
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --instance)
+            INSTANCE_NAME="$2"
+            shift 2
+            ;;
+        --zone)
+            ZONE="$2"
+            shift 2
+            ;;
+        *)
+            # Collect all other args for hyperopt
+            HYPEROPT_ARGS="$HYPEROPT_ARGS $1"
+            shift
+            ;;
+    esac
+done
+
+show_help() {
+    echo "GCloud VM Manager for Freqtrade"
+    echo ""
+    echo "Usage: ./gcloud-manage-vm.sh [command] [options]"
+    echo ""
+    echo "Commands:"
+    echo "  ssh      Connect to VM"
+    echo "  run      Run hyperopt on VM"
+    echo "  update   Update code on VM"
+    echo "  start    Start stopped VM"
+    echo "  stop     Stop VM (saves costs)"
+    echo "  delete   Delete VM"
+    echo "  status   Show VM status"
+    echo "  logs     View setup logs"
+    echo "  copy     Copy hyperopt results from VM"
+    echo ""
+    echo "Global Options:"
+    echo "  --instance NAME    VM instance name (default: freqtrade-hyperopt)"
+    echo "  --zone ZONE        GCloud zone (default: asia-southeast1-b)"
+    echo ""
+    echo "Run Command Options (passed to run-hyperopt.sh):"
+    echo "  --strategy, -s     Strategy name"
+    echo "  --epochs, -e       Number of epochs"
+    echo "  --timerange, -t    Time range"
+    echo "  --spaces           Optimization spaces"
+    echo "  --jobs, -j         Parallel jobs"
+    echo ""
+    echo "Examples:"
+    echo "  ./gcloud-manage-vm.sh ssh"
+    echo "  ./gcloud-manage-vm.sh run"
+    echo "  ./gcloud-manage-vm.sh run --epochs 500"
+    echo "  ./gcloud-manage-vm.sh run --strategy SekkaLong --epochs 1000"
+    echo "  ./gcloud-manage-vm.sh run --instance my-vm --zone us-west1-a"
+    echo "  ./gcloud-manage-vm.sh stop"
+}
+
+case "$COMMAND" in
+    ssh)
+        echo -e "${YELLOW}Connecting to ${INSTANCE_NAME}...${NC}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE"
+        ;;
+    
+    run)
+        echo -e "${YELLOW}Running hyperopt on ${INSTANCE_NAME}...${NC}"
+        if [ -n "$HYPEROPT_ARGS" ]; then
+            echo -e "Options: ${YELLOW}${HYPEROPT_ARGS}${NC}"
+        fi
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
+            "cd /opt/freqtrade && sudo ./run-hyperopt.sh $HYPEROPT_ARGS"
+        ;;
+    
+    update)
+        echo -e "${YELLOW}Updating code on ${INSTANCE_NAME}...${NC}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
+            "cd /opt/freqtrade && sudo git pull origin main && sudo chmod +x *.sh"
+        echo -e "${GREEN}✓ Code updated!${NC}"
+        ;;
+    
+    start)
+        echo -e "${YELLOW}Starting ${INSTANCE_NAME}...${NC}"
+        gcloud compute instances start "$INSTANCE_NAME" --zone="$ZONE"
+        echo -e "${GREEN}✓ VM started!${NC}"
+        ;;
+    
+    stop)
+        echo -e "${YELLOW}Stopping ${INSTANCE_NAME}...${NC}"
+        gcloud compute instances stop "$INSTANCE_NAME" --zone="$ZONE"
+        echo -e "${GREEN}✓ VM stopped! (no charges while stopped)${NC}"
+        ;;
+    
+    delete)
+        echo -e "${RED}WARNING: This will permanently delete ${INSTANCE_NAME}!${NC}"
+        read -p "Are you sure? (yes/no): " confirm
+        if [ "$confirm" = "yes" ]; then
+            gcloud compute instances delete "$INSTANCE_NAME" --zone="$ZONE"
+            echo -e "${GREEN}✓ VM deleted!${NC}"
+        else
+            echo "Cancelled."
+        fi
+        ;;
+    
+    status)
+        echo -e "${YELLOW}Status of ${INSTANCE_NAME}:${NC}"
+        gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" \
+            --format="table(name,status,machineType.basename(),scheduling.provisioningModel)"
+        ;;
+    
+    logs)
+        echo -e "${YELLOW}Setup logs from ${INSTANCE_NAME}:${NC}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
+            "cat /var/log/freqtrade-setup.log"
+        ;;
+    
+    copy)
+        echo -e "${YELLOW}Exporting best hyperopt result as JSON...${NC}"
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        OUTPUT_FILE="hyperopt_result_${TIMESTAMP}.json"
+        
+        # Export best result as JSON on VM, then copy
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
+            "cd /opt/freqtrade && docker compose run --rm freqtrade hyperopt-show --best --export-json /freqtrade/user_data/${OUTPUT_FILE} --config user_data/config-long.json"
+        
+        # Copy the JSON file
+        gcloud compute scp \
+            "$INSTANCE_NAME:/opt/freqtrade/user_data/${OUTPUT_FILE}" \
+            "./user_data/${OUTPUT_FILE}" \
+            --zone="$ZONE"
+        
+        echo -e "${GREEN}✓ Result saved to ./user_data/${OUTPUT_FILE}${NC}"
+        ;;
+    
+    *)
+        show_help
+        ;;
+esac

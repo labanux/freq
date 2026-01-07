@@ -25,6 +25,9 @@ USER root
 #RUN mkdir -p /freqtrade/user_data/data/binance
 #COPY --chown=ftuser:ftuser user_data/data/binance /freqtrade/user_data/data/binance
 
+RUN mkdir -p /freqtrade/user_data/logs
+RUN mkdir -p /freqtrade/user_data/data
+
 # Switch back to the standard user
 USER ftuser
 

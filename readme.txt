@@ -5,8 +5,8 @@ freqtrade backtesting --config user_data/config.json --strategy Sekka
 docker exec -it freqtrade freqtrade download-data \
   --exchange binance \
   --trading-mode spot \
-  --timeframes 1h \
-  --timerange 20230101-20251228 --erase \
+  --timeframes 1d \
+  --timerange 20220101-20251230 --erase \
   --pairs SOL/USDT BTC/USDT ZEC/USDT XRP/USDT LTC/USDT ETH/USDT ENA/USDT
 
 # Download Futures
@@ -14,8 +14,8 @@ docker exec -it freqtrade freqtrade download-data \
   --exchange binance \
   --trading-mode futures \
   --pairs SOL/USDT:USDT BTC/USDT:USDT ZEC/USDT:USDT XRP/USDT:USDT LTC/USDT:USDT ETH/USDT:USDT ENA/USDT:USDT \
-  --timeframes 1h \
-  --timerange 20230101-20251228 --erase
+  --timeframes 1d \
+  --timerange 20220101-20251230 --erase
 
 # DOWNLOAD spot Hyperliquid
 docker exec -it freqtrade python3 /freqtrade/user_data/strategies/download_hl.py
@@ -63,9 +63,9 @@ docker exec -it freqtrade freqtrade hyperopt \
   --strategy OptLong \
   --hyperopt-loss ZeroLossMaxTrades \
   --spaces buy sell \
-  --timerange 20230101-20251228 \
+  --timerange 20230101-20251230 \
   --config user_data/config-long.json \
-  -e 5000
+  -j 0 -e 5000
 
 
 docker compose run --rm freqtrade hyperopt \
@@ -135,6 +135,10 @@ If edited on server:
 - git pull
 - git stash pop
 
+Overwrite Local files:
+git checkout -- user_data/strategies/opt-long.py
+git pull
+
 IF permission denied:
 sudo chown -R $USER:$USER /freqtrade/user_data
 
@@ -179,3 +183,24 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 30 Dec
 docker exec -it freqtrade freqtrade hyperopt --strategy OptLong --hyperopt-loss ZeroLossMaxTrades --spaces buy sell --timerange 20230101-20251228 --config user_data/config-long.json -e 5000
 Change to include Leverage
+
+
+# Buy parameters:
+    buy_params = {
+        "DCA_STEP": 10,
+        "DCA_THRESHOLD": 0.1,
+        "RSI_THRESHOLD": 42,
+        "VWAP_GAP": -0.05,
+    }
+
+    # Sell parameters:
+    sell_params = {
+        "LEVERAGE": 1,
+        "RSI_TP": 60,
+        "TP_THRESHOLD": 0.01,
+    }
+
+    TP_THRESHOLD = 0.01
+    DCA_THRESHOLD = 0.1
+    RSI_THRESHOLD = 42
+    

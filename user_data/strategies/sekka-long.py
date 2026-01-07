@@ -32,13 +32,14 @@ class SekkaLong(IStrategy):
 
     TP_THRESHOLD = 0.01
     DCA_THRESHOLD = 0.1
-    RSI_THRESHOLD = 42
+    RSI_THRESHOLD = 42 # Hourly RSI
+    #RSI_THRESHOLD = 58 # 15min RSI
 
     # TP_THRESHOLD = 0.02
     # DCA_THRESHOLD = 0.06
     DCA_STEP = 10
-    VWAP_GAP = -0.05
-    # RSI_THRESHOLD = 40
+    VWAP_GAP = -0.05 # Hourly VWAP gap
+    #VWAP_GAP = -0.04 # 15min VWAP gap
     RSI_TP = 60
     
     RSI_PERIOD = 14
@@ -162,7 +163,7 @@ class SekkaLong(IStrategy):
 
     # ------------------ DCA Logic ------------------
     def adjust_trade_position(self, trade, current_time, current_rate, current_profit, **kwargs):
-        self.logger.info(f"[{current_time}] {trade.pair} | DCA check stage={trade.nr_of_successful_entries}")
+        #self.logger.info(f"[{current_time}] {trade.pair} | DCA check stage={trade.nr_of_successful_entries}")
         if self._last_dca_stage is None:
             self._last_dca_stage = {}
 
@@ -189,10 +190,10 @@ class SekkaLong(IStrategy):
             tag = f"DCA_{next_stage}"
             self._last_dca_stage[trade_id] = current_stage
 
-            self.logger.info(
-                f"[{current_time}] {trade.pair} | Triggering {tag} at {current_rate:.4f} "
-                f"({drop_ratio*100:.2f}%) | Free={free_balance:.2f} Stake={est_stake:.2f}"
-            )
+            #self.logger.info(
+            #    f"[{current_time}] {trade.pair} | Triggering {tag} at {current_rate:.4f} "
+            #    f"({drop_ratio*100:.2f}%) | Free={free_balance:.2f} Stake={est_stake:.2f}"
+            #)
             trade.enter_tag = tag
             return est_stake  # ✅ FIXED: execute with actual stake
 
@@ -211,7 +212,7 @@ class SekkaLong(IStrategy):
             rsi_1h = 50
             
         if rel >= self.TP_THRESHOLD and rsi_1h >= self.RSI_TP: 
-            self.logger.info(f"[{current_time}] {pair} | TAKE_PROFIT reached +{rel*100:.2f}%")
+            #self.logger.info(f"[{current_time}] {pair} | TAKE_PROFIT reached +{rel*100:.2f}%")
             self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
             return "TAKE_PROFIT"
 
