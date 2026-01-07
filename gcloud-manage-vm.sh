@@ -25,7 +25,7 @@
 #===============================================================================
 
 # Default configuration
-INSTANCE_NAME="freqtrade-hyperopt"
+INSTANCE_NAME="hyperopt-vm"
 ZONE="asia-southeast1-b"
 
 # Colors
@@ -66,6 +66,7 @@ show_help() {
     echo "Commands:"
     echo "  ssh      Connect to VM"
     echo "  run      Run hyperopt on VM"
+    echo "  download Download market data on VM"
     echo "  update   Update code on VM"
     echo "  start    Start stopped VM"
     echo "  stop     Stop VM (saves costs)"
@@ -89,8 +90,8 @@ show_help() {
     echo "  ./gcloud-manage-vm.sh ssh"
     echo "  ./gcloud-manage-vm.sh run"
     echo "  ./gcloud-manage-vm.sh run --epochs 500"
-    echo "  ./gcloud-manage-vm.sh run --strategy SekkaLong --epochs 1000"
-    echo "  ./gcloud-manage-vm.sh run --instance my-vm --zone us-west1-a"
+    echo "  ./gcloud-manage-vm.sh download"
+    echo "  ./gcloud-manage-vm.sh download --timeframes '1h 4h 1d'"
     echo "  ./gcloud-manage-vm.sh stop"
 }
 
@@ -107,6 +108,15 @@ case "$COMMAND" in
         fi
         gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
             "cd /opt/freqtrade && sudo ./run-hyperopt.sh $HYPEROPT_ARGS"
+        ;;
+    
+    download)
+        echo -e "${YELLOW}Downloading data on ${INSTANCE_NAME}...${NC}"
+        if [ -n "$HYPEROPT_ARGS" ]; then
+            echo -e "Options: ${YELLOW}${HYPEROPT_ARGS}${NC}"
+        fi
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
+            "cd /opt/freqtrade && sudo ./download-data.sh $HYPEROPT_ARGS"
         ;;
     
     update)
