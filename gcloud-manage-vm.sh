@@ -133,8 +133,20 @@ case "$COMMAND" in
     
     check)
         echo -e "${YELLOW}Checking hyperopt status on ${INSTANCE_NAME}...${NC}"
-        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
-            "if pgrep -f 'run-hyperopt.sh' > /dev/null; then echo '✓ Hyperopt is RUNNING'; ps aux | grep -E 'hyperopt|freqtrade' | grep -v grep; else echo '✗ Hyperopt is NOT running'; fi"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- '
+            echo "=== Docker Containers ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" 2>/dev/null || echo "No docker containers"
+            echo ""
+            echo "=== Hyperopt Process ==="
+            if pgrep -f "run-hyperopt.sh" > /dev/null 2>&1; then
+                echo "✓ run-hyperopt.sh is RUNNING"
+            else
+                echo "✗ run-hyperopt.sh is NOT running"
+            fi
+            echo ""
+            echo "=== Last Log Entry ==="
+            tail -5 /opt/freqtrade/hyperopt.log 2>/dev/null | head -5 || echo "No log file"
+        '
         ;;
     
     output)
