@@ -127,8 +127,29 @@ echo -e "${GREEN}  ✓ Hyperopt Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo -e "Finished at: ${YELLOW}$(date)${NC}"
 echo ""
-echo -e "To view results:"
-echo -e "  docker compose run --rm freqtrade hyperopt-list --best -n 10 --config ${CONFIG}"
+
+#-------------------------------------------------------------------------------
+# Export and upload best result to GCloud Storage
+#-------------------------------------------------------------------------------
+BUCKET_NAME="hyperopt_result"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_FILE="hyperopt_${STRATEGY}_${TIMESTAMP}.json"
+
+echo -e "${YELLOW}Exporting best result...${NC}"
+docker compose run --rm freqtrade hyperopt-show --best \
+    --export-json "/freqtrade/user_data/${RESULT_FILE}" \
+    --config "$CONFIG"
+
+if [ -f "user_data/${RESULT_FILE}" ]; then
+    echo -e "${YELLOW}Uploading to gs://${BUCKET_NAME}/${RESULT_FILE}...${NC}"
+    gsutil cp "user_data/${RESULT_FILE}" "gs://${BUCKET_NAME}/${RESULT_FILE}"
+    echo -e "${GREEN}✓ Result uploaded to GCloud Storage!${NC}"
+    echo -e "  gs://${BUCKET_NAME}/${RESULT_FILE}"
+else
+    echo -e "${YELLOW}⚠ Could not export result file${NC}"
+fi
+
 echo ""
-echo -e "To export best result:"
-echo -e "  docker compose run --rm freqtrade hyperopt-show --best --config ${CONFIG}"
+echo -e "To view results locally:"
+echo -e "  docker compose run --rm freqtrade hyperopt-list --best -n 10 --config ${CONFIG}"
+

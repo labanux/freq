@@ -119,6 +119,20 @@ case "$COMMAND" in
             "cd /opt/freqtrade && sudo ./download-data.sh $HYPEROPT_ARGS"
         ;;
     
+    init)
+        echo -e "${YELLOW}Initializing repository on ${INSTANCE_NAME}...${NC}"
+        GIT_REPO="https://github.com/labanux/freq.git"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- "
+            sudo rm -rf /opt/freqtrade
+            sudo mkdir -p /opt/freqtrade
+            cd /opt/freqtrade
+            sudo git clone ${GIT_REPO} .
+            sudo chmod +x *.sh 2>/dev/null || true
+            echo 'Repository initialized!'
+        "
+        echo -e "${GREEN}✓ Repository cloned!${NC}"
+        ;;
+    
     update)
         echo -e "${YELLOW}Updating code on ${INSTANCE_NAME}...${NC}"
         gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
