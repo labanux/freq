@@ -99,8 +99,8 @@ class OptLong(IStrategy):
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Single timeframe (1h) only - no multi-timeframe dependencies
-        df["rsi_1h"] = ta.RSI(df, timeperiod=self.RSI_PERIOD)
-        df["vwap_1h"] = self.compute_vwap(df, self.VWAP_WINDOW)
+        df["rsi_1h"] = ta.RSI(df, timeperiod=self.RSI_PERIOD.value)
+        df["vwap_1h"] = self.compute_vwap(df, self.VWAP_WINDOW.value)
         df["vwap_gap_1h"] = np.where(df["vwap_1h"] > 0, (df["close"] / df["vwap_1h"]) - 1.0, 0.0)
         # EMAs
         #df["ema_fast"] = ta.EMA(df, timeperiod=6)
