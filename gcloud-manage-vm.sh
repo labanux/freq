@@ -119,8 +119,10 @@ case "$COMMAND" in
         if [ -n "$HYPEROPT_ARGS" ]; then
             echo -e "Options: ${YELLOW}${HYPEROPT_ARGS}${NC}"
         fi
+        # Use setsid to properly daemonize the process so it persists after SSH disconnect
         gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
-            "cd /opt/freqtrade && sudo nohup ./run-hyperopt.sh --auto-stop $HYPEROPT_ARGS > /opt/freqtrade/hyperopt.log 2>&1 &"
+            "cd /opt/freqtrade && sudo setsid bash -c './run-hyperopt.sh --auto-stop $HYPEROPT_ARGS > /opt/freqtrade/hyperopt.log 2>&1' &"
+        sleep 3  # Wait a moment for process to start
         echo -e "${GREEN}✓ Hyperopt started in background!${NC}"
         echo ""
         echo -e "Commands to monitor:"
