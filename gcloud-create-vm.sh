@@ -26,17 +26,14 @@ set -e  # Exit on error
 # CONFIGURATION - Modify these values as needed
 #-------------------------------------------------------------------------------
 INSTANCE_NAME="${1:-freqtrade-hyperopt}"
-MACHINE_TYPE="${2:-c2-standard-30}"      # 30 vCPUs, 120GB RAM
+MACHINE_TYPE="${2:-c4-standard-8}"      # 8 vCPUs, 32GB RAM
 ZONE="${3:-asia-southeast1-b}"
 BOOT_DISK_SIZE="15GB"
-BOOT_DISK_TYPE="pd-ssd"
+BOOT_DISK_TYPE="hyperdisk-balanced"  # Required for C4 machines (pd-ssd not supported)
 
-# GitHub repository (SSH format)
-GIT_REPO="git@github.com:labanux/freq.git"
+# GitHub repository (HTTPS format - no SSH key needed)
+GIT_REPO="https://github.com/labanux/freq.git"
 GIT_BRANCH="main"
-
-# SSH key path for GitHub (will be copied to VM)
-SSH_KEY_PATH="$HOME/.ssh/id_ed25519"
 
 #-------------------------------------------------------------------------------
 # Colors for output
@@ -68,9 +65,9 @@ if ! command -v gcloud &> /dev/null; then
     exit 1
 fi
 
-if [ ! -f "$SSH_KEY_PATH" ]; then
-    echo -e "${RED}Error: SSH key not found at ${SSH_KEY_PATH}${NC}"
-    echo "Please update SSH_KEY_PATH in this script."
+# Check gcloud auth
+if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | head -1 > /dev/null; then
+    echo -e "${RED}Error: Not logged in to gcloud. Run: gcloud auth login${NC}"
     exit 1
 fi
 
@@ -117,21 +114,9 @@ apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin do
 systemctl start docker
 systemctl enable docker
 
-echo "[3/4] Docker installed successfully!"
+echo "[3/3] Docker installed successfully!"
 docker --version
 docker compose version
-
-# Setup SSH config for GitHub
-echo "[4/4] Setting up Git SSH config..."
-mkdir -p /root/.ssh
-cat >> /root/.ssh/config << 'SSHCONFIG'
-Host github.com
-    HostName github.com
-    User git
-    IdentityFile /root/.ssh/id_ed25519
-    StrictHostKeyChecking no
-SSHCONFIG
-chmod 600 /root/.ssh/config
 
 echo "========================================="
 echo "Initial VM Setup Complete at $(date)"
@@ -145,7 +130,7 @@ STARTUP_EOF
 #-------------------------------------------------------------------------------
 # Create the VM
 #-------------------------------------------------------------------------------
-echo -e "${YELLOW}[2/7] Creating Spot VM instance...${NC}"
+echo -e "${YELLOW}[2/6] Creating Spot VM instance...${NC}"
 
 gcloud compute instances create "$INSTANCE_NAME" \
     --machine-type="$MACHINE_TYPE" \
@@ -164,7 +149,7 @@ echo -e "${GREEN}✓ VM created!${NC}"
 #-------------------------------------------------------------------------------
 # Wait for VM to be ready
 #-------------------------------------------------------------------------------
-echo -e "${YELLOW}[3/7] Waiting for VM to be ready...${NC}"
+echo -e "${YELLOW}[3/6] Waiting for VM to be ready...${NC}"
 sleep 20
 
 # Wait for SSH to be available
@@ -180,7 +165,7 @@ done
 #-------------------------------------------------------------------------------
 # Wait for Docker setup to complete
 #-------------------------------------------------------------------------------
-echo -e "${YELLOW}[4/7] Waiting for Docker installation...${NC}"
+echo -e "${YELLOW}[4/6] Waiting for Docker installation...${NC}"
 for i in {1..30}; do
     if gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="test -f /tmp/setup-complete" 2>/dev/null; then
         echo -e "${GREEN}✓ Docker setup complete!${NC}"
@@ -191,17 +176,9 @@ for i in {1..30}; do
 done
 
 #-------------------------------------------------------------------------------
-# Copy SSH key for GitHub
-#-------------------------------------------------------------------------------
-echo -e "${YELLOW}[5/7] Copying SSH key for GitHub access...${NC}"
-gcloud compute scp "$SSH_KEY_PATH" "$INSTANCE_NAME:/tmp/id_ed25519" --zone="$ZONE"
-gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="sudo mv /tmp/id_ed25519 /root/.ssh/id_ed25519 && sudo chmod 600 /root/.ssh/id_ed25519"
-echo -e "${GREEN}✓ SSH key copied!${NC}"
-
-#-------------------------------------------------------------------------------
 # Clone repository
 #-------------------------------------------------------------------------------
-echo -e "${YELLOW}[6/7] Cloning repository...${NC}"
+echo -e "${YELLOW}[5/6] Cloning repository...${NC}"
 gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="
     sudo mkdir -p /opt/freqtrade
     cd /opt/freqtrade
@@ -214,7 +191,7 @@ echo -e "${GREEN}✓ Repository cloned!${NC}"
 #-------------------------------------------------------------------------------
 # Make scripts executable
 #-------------------------------------------------------------------------------
-echo -e "${YELLOW}[7/7] Setting up scripts...${NC}"
+echo -e "${YELLOW}[6/6] Setting up scripts...${NC}"
 gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="
     cd /opt/freqtrade
     sudo chmod +x *.sh 2>/dev/null || true

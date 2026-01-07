@@ -18,7 +18,7 @@ from typing import Optional
 
 
 class OptLong(IStrategy):
-    timeframe = "1h"
+    timeframe = "1d"
     informative_timeframes = []  # Single timeframe only - no multi-timeframe
     process_only_new_candles = True
     can_short = False  # Long-only strategy
@@ -41,8 +41,8 @@ class OptLong(IStrategy):
     
 
     # Fixed Constants
-    RSI_PERIOD = IntParameter(6, 24, default=14, space="buy", optimize=True)
-    VWAP_WINDOW = IntParameter(6, 24, default=14, space="buy", optimize=True)
+    RSI_PERIOD = 14 
+    VWAP_WINDOW = 14
 
     minimal_roi = {}
     stoploss = -0.99
@@ -99,8 +99,8 @@ class OptLong(IStrategy):
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Single timeframe (1h) only - no multi-timeframe dependencies
-        df["rsi_1h"] = ta.RSI(df, timeperiod=self.RSI_PERIOD.value)
-        df["vwap_1h"] = self.compute_vwap(df, self.VWAP_WINDOW.value)
+        df["rsi_1h"] = ta.RSI(df, timeperiod=self.RSI_PERIOD)
+        df["vwap_1h"] = self.compute_vwap(df, self.VWAP_WINDOW)
         df["vwap_gap_1h"] = np.where(df["vwap_1h"] > 0, (df["close"] / df["vwap_1h"]) - 1.0, 0.0)
         # EMAs
         #df["ema_fast"] = ta.EMA(df, timeperiod=6)

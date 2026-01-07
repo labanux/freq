@@ -30,20 +30,19 @@ class SekkaLong(IStrategy):
 
     startup_candle_count = 20
 
-    TP_THRESHOLD = 0.01
-    DCA_THRESHOLD = 0.1
-    RSI_THRESHOLD = 42 # Hourly RSI
-    #RSI_THRESHOLD = 58 # 15min RSI
-
-    # TP_THRESHOLD = 0.02
-    # DCA_THRESHOLD = 0.06
+    # Buy
     DCA_STEP = 10
-    VWAP_GAP = -0.05 # Hourly VWAP gap
-    #VWAP_GAP = -0.04 # 15min VWAP gap
-    RSI_TP = 60
-    
-    RSI_PERIOD = 14
-    VWAP_WINDOW = 14
+    DCA_THRESHOLD= 0.1
+    RSI_THRESHOLD= 42
+    VWAP_GAP= -0.05
+
+    VWAP_WINDOW= 14
+    RSI_PERIOD= 14
+
+    # Sell
+    RSI_TP= 60
+    TP_THRESHOLD= 0.01
+
     LEVERAGE = 1
 
     minimal_roi = {}
