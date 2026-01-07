@@ -136,7 +136,7 @@ case "$COMMAND" in
     update)
         echo -e "${YELLOW}Updating code on ${INSTANCE_NAME}...${NC}"
         gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
-            "cd /opt/freqtrade && sudo git pull origin main && sudo chmod +x *.sh"
+            "cd /opt/freqtrade && sudo git fetch origin main && sudo git reset --hard origin/main && sudo chmod +x *.sh"
         echo -e "${GREEN}✓ Code updated!${NC}"
         ;;
     

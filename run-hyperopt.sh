@@ -23,7 +23,7 @@ SPACES="buy sell"
 TIMERANGE="20220101-20251230"
 CONFIG="user_data/config-long.json"
 EPOCHS=1000
-JOBS=0  # 0 = use all cores
+JOBS=-1  # -1 = use all cores
 
 #-------------------------------------------------------------------------------
 # Parse command line arguments
