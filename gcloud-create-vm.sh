@@ -25,7 +25,7 @@ set -e  # Exit on error
 #-------------------------------------------------------------------------------
 # CONFIGURATION - Modify these values as needed
 #-------------------------------------------------------------------------------
-INSTANCE_NAME="${1:-freqtrade-hyperopt}"
+INSTANCE_NAME="${1:-hyperopt-vm}"
 MACHINE_TYPE="${2:-c4-standard-8}"      # 8 vCPUs, 32GB RAM
 ZONE="${3:-asia-southeast1-b}"
 BOOT_DISK_SIZE="15GB"
@@ -142,7 +142,7 @@ gcloud compute instances create "$INSTANCE_NAME" \
     --image-family=debian-12 \
     --image-project=debian-cloud \
     --metadata=startup-script="$STARTUP_SCRIPT" \
-    --scopes=default
+    --scopes=default,storage-rw
 
 echo -e "${GREEN}✓ VM created!${NC}"
 

@@ -65,7 +65,10 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  ssh      Connect to VM"
-    echo "  run      Run hyperopt on VM"
+    echo "  run      Run hyperopt (foreground)"
+    echo "  run-bg   Run hyperopt in background"
+    echo "  check    Check if hyperopt is running"
+    echo "  output   View hyperopt output log"
     echo "  download Download market data on VM"
     echo "  update   Update code on VM"
     echo "  start    Start stopped VM"
@@ -108,6 +111,32 @@ case "$COMMAND" in
         fi
         gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
             "cd /opt/freqtrade && sudo ./run-hyperopt.sh $HYPEROPT_ARGS"
+        ;;
+    
+    run-bg)
+        echo -e "${YELLOW}Starting hyperopt in background on ${INSTANCE_NAME}...${NC}"
+        if [ -n "$HYPEROPT_ARGS" ]; then
+            echo -e "Options: ${YELLOW}${HYPEROPT_ARGS}${NC}"
+        fi
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
+            "cd /opt/freqtrade && sudo nohup ./run-hyperopt.sh $HYPEROPT_ARGS > /opt/freqtrade/hyperopt.log 2>&1 &"
+        echo -e "${GREEN}✓ Hyperopt started in background!${NC}"
+        echo ""
+        echo -e "Commands to monitor:"
+        echo -e "  ${YELLOW}./gcloud-manage-vm.sh check${NC}   - Check if running"
+        echo -e "  ${YELLOW}./gcloud-manage-vm.sh output${NC}  - View output log"
+        ;;
+    
+    check)
+        echo -e "${YELLOW}Checking hyperopt status on ${INSTANCE_NAME}...${NC}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
+            "if pgrep -f 'run-hyperopt.sh' > /dev/null; then echo '✓ Hyperopt is RUNNING'; ps aux | grep -E 'hyperopt|freqtrade' | grep -v grep; else echo '✗ Hyperopt is NOT running'; fi"
+        ;;
+    
+    output)
+        echo -e "${YELLOW}Last 50 lines of hyperopt log:${NC}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
+            "tail -50 /opt/freqtrade/hyperopt.log 2>/dev/null || echo 'No log file found'"
         ;;
     
     download)
