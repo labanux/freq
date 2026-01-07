@@ -119,10 +119,23 @@ case "$COMMAND" in
         if [ -n "$HYPEROPT_ARGS" ]; then
             echo -e "Options: ${YELLOW}${HYPEROPT_ARGS}${NC}"
         fi
-        # Use setsid to properly daemonize the process so it persists after SSH disconnect
-        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
-            "cd /opt/freqtrade && sudo setsid bash -c './run-hyperopt.sh --auto-stop $HYPEROPT_ARGS > /opt/freqtrade/hyperopt.log 2>&1' &"
-        sleep 3  # Wait a moment for process to start
+        # Use screen for reliable background execution that survives SSH disconnect
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- "
+            # Install screen if not present
+            which screen > /dev/null || sudo apt-get install -y screen > /dev/null 2>&1
+            # Kill any existing hyperopt screen session
+            sudo screen -S hyperopt -X quit 2>/dev/null || true
+            # Start new screen session
+            cd /opt/freqtrade
+            sudo screen -dmS hyperopt bash -c './run-hyperopt.sh --auto-stop $HYPEROPT_ARGS 2>&1 | tee /opt/freqtrade/hyperopt.log'
+            sleep 2
+            # Verify it started
+            if sudo screen -list | grep -q hyperopt; then
+                echo 'Screen session started successfully'
+            else
+                echo 'ERROR: Failed to start screen session'
+            fi
+        "
         echo -e "${GREEN}✓ Hyperopt started in background!${NC}"
         echo ""
         echo -e "Commands to monitor:"
@@ -137,17 +150,26 @@ case "$COMMAND" in
         echo -e "${YELLOW}Checking hyperopt status on ${INSTANCE_NAME}...${NC}"
         gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- '
             echo "=== Docker Containers ==="
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" 2>/dev/null || echo "No docker containers"
+            docker ps 2>/dev/null || echo "Docker not running"
             echo ""
-            echo "=== Hyperopt Process ==="
-            if pgrep -f "run-hyperopt.sh" > /dev/null 2>&1; then
+            echo "=== Hyperopt Script Process ==="
+            PROC=$(pgrep -af "run-hyperopt" 2>/dev/null | grep -v grep || true)
+            if [ -n "$PROC" ]; then
                 echo "✓ run-hyperopt.sh is RUNNING"
+                echo "$PROC"
             else
                 echo "✗ run-hyperopt.sh is NOT running"
             fi
             echo ""
-            echo "=== Last Log Entry ==="
-            tail -5 /opt/freqtrade/hyperopt.log 2>/dev/null | head -5 || echo "No log file"
+            echo "=== Log File ==="
+            if [ -f /opt/freqtrade/hyperopt.log ]; then
+                ls -la /opt/freqtrade/hyperopt.log
+                echo ""
+                echo "=== Last 10 Log Lines ==="
+                tail -10 /opt/freqtrade/hyperopt.log
+            else
+                echo "No log file found"
+            fi
         '
         ;;
     
