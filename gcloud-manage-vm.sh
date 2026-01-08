@@ -69,6 +69,8 @@ show_help() {
     echo "  run-bg   Run hyperopt in background"
     echo "  check    Check if hyperopt is running"
     echo "  output   View hyperopt output log"
+    echo "  best     Show current best hyperopt results"
+    echo "  kill     Stop running hyperopt"
     echo "  download Download market data on VM"
     echo "  update   Update code on VM"
     echo "  start    Start stopped VM"
@@ -179,6 +181,32 @@ case "$COMMAND" in
             "tail -50 /opt/freqtrade/hyperopt.log 2>/dev/null || echo 'No log file found'"
         ;;
     
+    best)
+        echo -e "${YELLOW}Current best hyperopt results on ${INSTANCE_NAME}:${NC}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- '
+            cd /opt/freqtrade
+            docker compose run --rm freqtrade hyperopt-list --best -n 5 --config user_data/config-long.json 2>/dev/null
+            echo ""
+            echo "=== Best Parameters ==="
+            docker compose run --rm freqtrade hyperopt-show --best --config user_data/config-long.json 2>/dev/null | tail -40
+        '
+        ;;
+    
+    kill)
+        echo -e "${YELLOW}Stopping hyperopt on ${INSTANCE_NAME}...${NC}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- '
+            # Kill screen session
+            sudo screen -S hyperopt -X quit 2>/dev/null || true
+            # Stop all freqtrade containers
+            docker stop $(docker ps -q --filter "ancestor=freqtradeorg/freqtrade:stable_plot") 2>/dev/null || true
+            cd /opt/freqtrade
+            docker compose down 2>/dev/null || true
+            # Kill any remaining processes
+            sudo pkill -f "run-hyperopt" 2>/dev/null || true
+            echo "✓ Hyperopt stopped"
+        '
+        echo -e "${GREEN}✓ Hyperopt stopped!${NC}"
+        ;;
     download)
         echo -e "${YELLOW}Downloading data on ${INSTANCE_NAME}...${NC}"
         if [ -n "$HYPEROPT_ARGS" ]; then

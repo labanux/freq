@@ -22,7 +22,7 @@ HYPEROPT_LOSS="ZeroLossMaxTrades"
 SPACES="buy sell"
 TIMERANGE="20220101-20251230"
 CONFIG="user_data/config-long.json"
-EPOCHS=1000
+EPOCHS=2000
 JOBS=-1  # -1 = use all cores
 AUTO_STOP=false  # Auto-shutdown VM after completion
 
