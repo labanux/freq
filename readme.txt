@@ -203,4 +203,21 @@ Change to include Leverage
     TP_THRESHOLD = 0.01
     DCA_THRESHOLD = 0.1
     RSI_THRESHOLD = 42
-    
+
+
+# Pre-Requisite Shell:
+gcloud services enable cloudbuild.googleapis.com
+gcloud services enable run.googleapis.com
+
+# With shell script:
+./gcloud-create-vm.sh (default hyperopt-vm)
+./gcloud-manage-vm.sh init
+./gcloud-manage-vm.sh update
+./gcloud-manage-vm.sh download --timeframes 1d --timerange 20220101-20251230
+./gcloud-manage-vm.sh run-bg -e
+
+Other commands:
+./gcloud-manage-vm.sh stop
+./gcloud-manage-vm.sh start
+./gcloud-manage-vm.sh status
+./gcloud-manage-vm.sh delete

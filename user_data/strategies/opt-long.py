@@ -18,7 +18,7 @@ from typing import Optional
 
 
 class OptLong(IStrategy):
-    timeframe = "1d"
+    timeframe = "1h"
     informative_timeframes = []  # Single timeframe only - no multi-timeframe
     process_only_new_candles = True
     can_short = False  # Long-only strategy
