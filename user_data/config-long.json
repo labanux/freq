@@ -16,15 +16,17 @@
       "SOL/USDT:USDT",
       "ADA/USDT:USDT",
       "DOGE/USDT:USDT",
-      "XRP/USDT:USDT"
+      "XRP/USDT:USDT",
+      "ENA/USDT:USDT",
+      "ZEC/USDT:USDT"
     ]
   },
+  "max_open_trades": 9,
   "telegram": {
     "enabled": true,
     "token": "",
     "chat_id": ""
   },
-  "max_open_trades": 7,
   "pairlists": [
     {
       "method": "StaticPairList"
