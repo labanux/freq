@@ -116,6 +116,28 @@ case "$COMMAND" in
         ;;
     
     run-bg)
+        echo -e "${YELLOW}Checking for existing hyperopt run...${NC}"
+        
+        # Check if hyperopt is already running (check screen session AND docker containers)
+        RUNNING=$(gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
+            "if sudo screen -list 2>/dev/null | grep -q hyperopt || docker ps --format '{{.Image}}' 2>/dev/null | grep -q freqtrade; then echo 'RUNNING'; else echo 'NOT_RUNNING'; fi")
+        
+        if echo "$RUNNING" | grep -q "RUNNING"; then
+            echo -e "${RED}⚠ WARNING: Hyperopt is already running!${NC}"
+            echo -e "Starting a new run will KILL the existing run and start fresh."
+            echo -e "Your current progress will be saved but a new results file will be created."
+            echo ""
+            read -p "Do you want to KILL the existing run and start a new one? (y/N): " CONFIRM
+            if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+                echo -e "${GREEN}Aborted. Existing hyperopt run continues.${NC}"
+                echo -e "Use './gcloud-manage-vm.sh check' to monitor progress."
+                exit 0
+            fi
+            echo -e "${YELLOW}Killing existing run and starting new one...${NC}"
+        else
+            echo -e "${GREEN}No existing hyperopt run detected.${NC}"
+        fi
+        
         echo -e "${YELLOW}Starting hyperopt in background on ${INSTANCE_NAME}...${NC}"
         echo -e "${YELLOW}VM will auto-stop when hyperopt completes.${NC}"
         if [ -n "$HYPEROPT_ARGS" ]; then
@@ -127,6 +149,8 @@ case "$COMMAND" in
             which screen > /dev/null || sudo apt-get install -y screen > /dev/null 2>&1
             # Kill any existing hyperopt screen session
             sudo screen -S hyperopt -X quit 2>/dev/null || true
+            # Stop any running docker containers
+            docker stop \$(docker ps -q --filter 'ancestor=freqtradeorg/freqtrade:stable_plot') 2>/dev/null || true
             # Start new screen session
             cd /opt/freqtrade
             sudo screen -dmS hyperopt bash -c './run-hyperopt.sh --auto-stop $HYPEROPT_ARGS 2>&1 | tee /opt/freqtrade/hyperopt.log'

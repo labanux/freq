@@ -25,6 +25,7 @@ CONFIG="user_data/config-long.json"
 EPOCHS=2000
 JOBS=-1  # -1 = use all cores
 AUTO_STOP=false  # Auto-shutdown VM after completion
+FRESH_START=false  # Set to true to start fresh (no resume)
 
 #-------------------------------------------------------------------------------
 # Parse command line arguments
@@ -63,6 +64,10 @@ while [[ $# -gt 0 ]]; do
             AUTO_STOP=true
             shift
             ;;
+        --fresh)
+            FRESH_START=true
+            shift
+            ;;
         --help|-h)
             echo "Usage: ./run-hyperopt.sh [OPTIONS]"
             echo ""
@@ -75,6 +80,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --epochs, -e      Number of epochs (default: 5000)"
             echo "  --jobs, -j        Number of parallel jobs, -1=all cores (default: -1)"
             echo "  --auto-stop       Shutdown VM after completion"
+            echo "  --fresh           Start fresh hyperopt (don't resume from previous)"
             echo "  --help, -h        Show this help"
             exit 0
             ;;
@@ -115,6 +121,15 @@ echo ""
 #-------------------------------------------------------------------------------
 # Run Hyperopt
 #-------------------------------------------------------------------------------
+RESUME_FLAG=""
+if [ "$FRESH_START" = false ]; then
+    RESUME_FLAG="--resume"
+    echo -e "${YELLOW}Mode: Resume from previous run (use --fresh to start new)${NC}"
+else
+    echo -e "${YELLOW}Mode: Fresh start (ignoring previous results)${NC}"
+fi
+echo ""
+
 docker compose run --rm freqtrade hyperopt \
     --strategy "$STRATEGY" \
     --hyperopt-loss "$HYPEROPT_LOSS" \
@@ -122,7 +137,8 @@ docker compose run --rm freqtrade hyperopt \
     --timerange "$TIMERANGE" \
     --config "$CONFIG" \
     -j "$JOBS" \
-    -e "$EPOCHS"
+    -e "$EPOCHS" \
+    $RESUME_FLAG
 
 #-------------------------------------------------------------------------------
 # Done
