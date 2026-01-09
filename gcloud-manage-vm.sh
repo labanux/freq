@@ -212,8 +212,15 @@ case "$COMMAND" in
         echo -e "${YELLOW}Current best hyperopt results on ${INSTANCE_NAME}:${NC}"
         gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- '
             cd /opt/freqtrade
-            echo "=== Best Result ==="
-            docker compose run --rm freqtrade hyperopt-show --best --config user_data/config-long.json 2>/dev/null
+            # Find the latest .fthypt file
+            LATEST_FILE=$(ls -t user_data/hyperopt_results/*.fthypt 2>/dev/null | head -1)
+            if [ -n "$LATEST_FILE" ]; then
+                FILENAME=$(basename "$LATEST_FILE")
+                echo "=== Using: $FILENAME ==="
+                docker compose run --rm freqtrade hyperopt-show --best --config user_data/config-long.json --hyperopt-filename "$FILENAME" 2>/dev/null
+            else
+                echo "No hyperopt results found"
+            fi
         '
         ;;
     
