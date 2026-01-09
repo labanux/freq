@@ -185,10 +185,8 @@ case "$COMMAND" in
         echo -e "${YELLOW}Current best hyperopt results on ${INSTANCE_NAME}:${NC}"
         gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- '
             cd /opt/freqtrade
-            docker compose run --rm freqtrade hyperopt-list --best -n 5 --config user_data/config-long.json 2>/dev/null
-            echo ""
-            echo "=== Best Parameters ==="
-            docker compose run --rm freqtrade hyperopt-show --best --config user_data/config-long.json 2>/dev/null | tail -40
+            echo "=== Best Result ==="
+            docker compose run --rm freqtrade hyperopt-show --best --config user_data/config-long.json 2>/dev/null
         '
         ;;
     
