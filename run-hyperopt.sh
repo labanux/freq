@@ -121,12 +121,13 @@ echo ""
 #-------------------------------------------------------------------------------
 # Run Hyperopt
 #-------------------------------------------------------------------------------
-RESUME_FLAG=""
-if [ "$FRESH_START" = false ]; then
-    RESUME_FLAG="--resume"
-    echo -e "${YELLOW}Mode: Resume from previous run (use --fresh to start new)${NC}"
-else
+# Freqtrade auto-resumes by default, use --no-resume for fresh start
+FRESH_FLAG=""
+if [ "$FRESH_START" = true ]; then
+    FRESH_FLAG="--no-resume"
     echo -e "${YELLOW}Mode: Fresh start (ignoring previous results)${NC}"
+else
+    echo -e "${YELLOW}Mode: Resume from previous run (use --fresh to start new)${NC}"
 fi
 echo ""
 
@@ -138,7 +139,7 @@ docker compose run --rm freqtrade hyperopt \
     --config "$CONFIG" \
     -j "$JOBS" \
     -e "$EPOCHS" \
-    $RESUME_FLAG
+    $FRESH_FLAG
 
 #-------------------------------------------------------------------------------
 # Done

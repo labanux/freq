@@ -118,11 +118,11 @@ case "$COMMAND" in
     run-bg)
         echo -e "${YELLOW}Checking for existing hyperopt run...${NC}"
         
-        # Check if hyperopt is already running (check screen session AND docker containers)
+        # Check if hyperopt docker container is actually running (not just stale screen)
         RUNNING=$(gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
-            "if sudo screen -list 2>/dev/null | grep -q hyperopt || docker ps --format '{{.Image}}' 2>/dev/null | grep -q freqtrade; then echo 'RUNNING'; else echo 'NOT_RUNNING'; fi")
+            "if docker ps --format '{{.Image}}' 2>/dev/null | grep -q freqtrade; then echo 'DOCKER_ACTIVE'; else echo 'DOCKER_INACTIVE'; fi" 2>/dev/null | grep -o 'DOCKER_[A-Z]*' | tail -1)
         
-        if echo "$RUNNING" | grep -q "RUNNING"; then
+        if [ "$RUNNING" = "DOCKER_ACTIVE" ]; then
             echo -e "${RED}⚠ WARNING: Hyperopt is already running!${NC}"
             echo -e "Starting a new run will KILL the existing run and start fresh."
             echo -e "Your current progress will be saved but a new results file will be created."
@@ -136,6 +136,9 @@ case "$COMMAND" in
             echo -e "${YELLOW}Killing existing run and starting new one...${NC}"
         else
             echo -e "${GREEN}No existing hyperopt run detected.${NC}"
+            # Clean up any stale screen sessions
+            gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- \
+                "sudo screen -S hyperopt -X quit 2>/dev/null || true" 2>/dev/null
         fi
         
         echo -e "${YELLOW}Starting hyperopt in background on ${INSTANCE_NAME}...${NC}"
