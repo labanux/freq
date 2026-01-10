@@ -63,9 +63,9 @@ docker exec -it freqtrade freqtrade hyperopt \
   --strategy OptLong \
   --hyperopt-loss ZeroLossMaxTrades \
   --spaces buy sell \
-  --timerange 20220101-20251230 \
+  --timerange 20250101-20251230 \
   --config user_data/config-long.json \
-  -j 0 -e 5000
+  -j -1 -e 500
 
 
 docker compose run --rm freqtrade hyperopt \
@@ -214,15 +214,12 @@ Create bucket:
 ./gcloud-create-vm.sh (default hyperopt-vm)
 ./gcloud-manage-vm.sh init
 ./gcloud-manage-vm.sh update
-./gcloud-manage-vm.sh download --timeframes 1d --timerange 20220101-20251230
-./gcloud-manage-vm.sh run-bg -e
+./gcloud-manage-vm.sh download --timeframes 1h --timerange 20220101-20251230
+./gcloud-manage-vm.sh run-bg -e 5000 (default is 2000)
 
 Other commands:
 ./gcloud-manage-vm.sh stop
 ./gcloud-manage-vm.sh start
 ./gcloud-manage-vm.sh status
 ./gcloud-manage-vm.sh delete
-
-Try optimize:
-- Sell/Exit: TP space = roi
-- Period RSI & VWAP refer to single value.
+./gcloud-manage-vm.sh best

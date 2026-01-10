@@ -26,7 +26,7 @@ set -e  # Exit on error
 # CONFIGURATION - Modify these values as needed
 #-------------------------------------------------------------------------------
 INSTANCE_NAME="${1:-hyperopt-vm}"
-MACHINE_TYPE="${2:-c4-standard-8}"      # 8 vCPUs, 32GB RAM
+MACHINE_TYPE="${2:-c4-highcpu-8}"      # c4-standard-8: 8 vCPUs, 32GB RAM
 ZONE="${3:-asia-southeast1-b}"
 BOOT_DISK_SIZE="15GB"
 BOOT_DISK_TYPE="hyperdisk-balanced"  # Required for C4 machines (pd-ssd not supported)

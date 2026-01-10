@@ -32,12 +32,12 @@ class OptLong(IStrategy):
 
     # LONG Parameters
     TP_PERCENTAGE = DecimalParameter(0.01, 0.04, default=0.01, decimals=2, space="sell", optimize=True)
-    TP_RSI = IntParameter(50, 80, default=72, space="sell", optimize=True)
+    TP_RSI = IntParameter(55, 70, default=60, space="sell", optimize=True)
 
     DCA_THRESHOLD = DecimalParameter(0.04, 0.10, default=0.01, decimals=2, space="buy", optimize=True)
     DCA_STEP = IntParameter(4, 10, default=5, space="buy", optimize=True)
     ENTRY_VWAP_GAP = DecimalParameter(-0.10, -0.03, default=-0.03, decimals=2, space="buy", optimize=True)
-    ENTRY_RSI = IntParameter(20, 60, default=48, space="buy", optimize=True)
+    ENTRY_RSI = IntParameter(20, 55, default=30, space="buy", optimize=True)
     
     GENERAL_PERIOD = IntParameter(14, 24, default=14, space="buy", optimize=True)
 
