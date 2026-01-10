@@ -6,7 +6,7 @@ import numpy as np
 class ZeroLossMaxTrades(IHyperOptLoss):
     """
     Custom Loss function:
-    1. Zero Loss (100% Win Rate) is mandatory. Penalize heavily if any loss.
+    1. 95% Win Rate is mandatory. Penalize heavily if win rate below 95%.
     2. Min 2% Average Profit required.
     3. Maximize Trade Count.
     """
@@ -18,15 +18,16 @@ class ZeroLossMaxTrades(IHyperOptLoss):
         if trade_count == 0:
             return 1000.0  # High penalty for no trades
 
-        # 1. Check for Losses
+        # 1. Check Win Rate (must be >= 95%)
         # results['profit_ratio'] contains the profit percentage (0.01 = 1%)
         losing_trades = results[results['profit_ratio'] < 0]
         loss_count = len(losing_trades)
+        win_rate = (trade_count - loss_count) / trade_count
 
-        if loss_count > 0:
-            # We have losses. Return a HIGH positive number to reject this.
-            # 100 base + 10 per losing trade + total loss percentage
-            return 100.0 + (loss_count * 10.0) - losing_trades['profit_ratio'].sum()
+        if win_rate < 0.95:
+            # Win rate below 95%. Return a HIGH positive number to reject this.
+            # 100 base + penalty proportional to how far below 95%
+            return 100.0 + (0.95 - win_rate) * 1000.0 - losing_trades['profit_ratio'].sum()
 
         # 2. Check Min Profit (2%)
         avg_profit = results['profit_ratio'].mean()
