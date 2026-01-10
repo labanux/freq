@@ -31,20 +31,20 @@ class OptLong(IStrategy):
     startup_candle_count = 20
 
     # LONG Parameters
-    TP_THRESHOLD = DecimalParameter(0.01, 0.10, default=0.04, decimals=2, space="sell", optimize=True)
-    RSI_TP = IntParameter(60, 90, default=72, space="sell", optimize=True)
+    TP_PERCENTAGE = DecimalParameter(0.01, 0.04, default=0.01, decimals=2, space="sell", optimize=True)
+    TP_RSI = IntParameter(50, 80, default=72, space="sell", optimize=True)
 
-    DCA_THRESHOLD = DecimalParameter(0.01, 0.10, default=0.01, decimals=2, space="buy", optimize=True)
-    DCA_STEP = IntParameter(1, 10, default=5, space="buy", optimize=True)
-    VWAP_GAP = DecimalParameter(-0.10, -0.01, default=-0.03, decimals=2, space="buy", optimize=True)
-    RSI_THRESHOLD = IntParameter(20, 60, default=48, space="buy", optimize=True)
+    DCA_THRESHOLD = DecimalParameter(0.04, 0.10, default=0.01, decimals=2, space="buy", optimize=True)
+    DCA_STEP = IntParameter(4, 10, default=5, space="buy", optimize=True)
+    ENTRY_VWAP_GAP = DecimalParameter(-0.10, -0.03, default=-0.03, decimals=2, space="buy", optimize=True)
+    ENTRY_RSI = IntParameter(20, 60, default=48, space="buy", optimize=True)
     
+    GENERAL_PERIOD = IntParameter(14, 24, default=14, space="buy", optimize=True)
 
-    # Fixed Constants
-    RSI_PERIOD = 14 
-    VWAP_WINDOW = 14
+    # Fixed Constants - Note: Use actual values in methods, not .value at class level
+    # RSI_PERIOD and VWAP_WINDOW will use GENERAL_PERIOD.value in populate_indicators
 
-    minimal_roi = {}
+    minimal_roi = {}  # We use custom_exit instead
     stoploss = -0.99
     LEVERAGE = 1
 
@@ -52,6 +52,31 @@ class OptLong(IStrategy):
 
     logger = logging.getLogger(__name__)
     _last_dca_stage = None
+
+    # Protections (Freqtrade 2025.11+ requires in strategy, not config)
+    @property
+    def protections(self):
+        return [
+            {
+                "method": "CooldownPeriod",
+                "stop_duration_candles": 24,
+                "trade_limit": 1
+            },
+            {
+                "method": "StoplossGuard",
+                "lookback_period_candles": 48,
+                "trade_limit": 2,
+                "stop_duration_candles": 48,
+                "only_per_pair": True
+            },
+            {
+                "method": "MaxDrawdown",
+                "lookback_period_candles": 168,
+                "trade_limit": 5,
+                "stop_duration_candles": 24,
+                "max_allowed_drawdown": 0.2
+            }
+        ]
 
     # ------------------ Informative Pairs ------------------
     def informative_pairs(self):
@@ -99,8 +124,10 @@ class OptLong(IStrategy):
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Single timeframe (1h) only - no multi-timeframe dependencies
-        df["rsi_1h"] = ta.RSI(df, timeperiod=self.RSI_PERIOD)
-        df["vwap_1h"] = self.compute_vwap(df, self.VWAP_WINDOW)
+        # Use GENERAL_PERIOD for both RSI and VWAP
+        period = self.GENERAL_PERIOD.value
+        df["rsi_1h"] = ta.RSI(df, timeperiod=period)
+        df["vwap_1h"] = self.compute_vwap(df, period)
         df["vwap_gap_1h"] = np.where(df["vwap_1h"] > 0, (df["close"] / df["vwap_1h"]) - 1.0, 0.0)
         # EMAs
         #df["ema_fast"] = ta.EMA(df, timeperiod=6)
@@ -117,8 +144,8 @@ class OptLong(IStrategy):
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         df["enter_long"] = 0
         df.loc[
-            (df["rsi_1h"] <= self.RSI_THRESHOLD.value) 
-            & (df["vwap_gap_1h"] < self.VWAP_GAP.value),
+            (df["rsi_1h"] <= self.ENTRY_RSI.value) 
+            & (df["vwap_gap_1h"] < self.ENTRY_VWAP_GAP.value),
             "enter_long",
         ] = 1
         return df
@@ -202,16 +229,16 @@ class OptLong(IStrategy):
         except Exception:
             rsi_1h = 50
             
-        if rel >= self.TP_THRESHOLD.value and rsi_1h >= self.RSI_TP.value: 
+        if rel >= self.TP_PERCENTAGE.value and rsi_1h >= self.TP_RSI.value: 
             #self.logger.info(f"[{current_time}] {pair} | TAKE_PROFIT reached +{rel*100:.2f}%")
             #self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
             return "TAKE_PROFIT"
 
         # Stop loss after all DCAs are used
-        #if dca_stage >= (self.DCA_STEP + 1) and rel <= -self.DCA_THRESHOLD:
+        if dca_stage >= (self.DCA_STEP.value + 1) and rel <= -self.DCA_THRESHOLD.value:
         #    self.logger.info(f"[{current_time}] {pair} | STOP_LOSS_AFTER_DCA triggered {rel*100:.2f}%")
-        #    self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
-        #    return "STOP_LOSS_AFTER_DCA"
+            self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
+            return "STOP_LOSS_AFTER_DCA"
 
         return None
 

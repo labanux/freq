@@ -30,18 +30,17 @@ class SekkaLong(IStrategy):
 
     startup_candle_count = 20
 
-    # Buy
-    DCA_STEP = 10
-    DCA_THRESHOLD= 0.1
-    RSI_THRESHOLD= 42
-    VWAP_GAP= -0.05
-
-    VWAP_WINDOW= 14
-    RSI_PERIOD= 14
-
     # Sell
-    RSI_TP= 60
-    TP_THRESHOLD= 0.01
+    TP_PERCENTAGE= 0.01
+    TP_RSI= 60
+
+    # Buy
+    DCA_THRESHOLD= 0.1
+    DCA_STEP = 10
+    ENTRY_VWAP_GAP= -0.05
+    ENTRY_RSI= 42
+
+    GENERAL_PERIOD= 14
 
     LEVERAGE = 1
 
@@ -52,6 +51,31 @@ class SekkaLong(IStrategy):
 
     logger = logging.getLogger(__name__)
     _last_dca_stage = None
+
+    # Protections (Freqtrade 2025.11+ requires in strategy, not config)
+    @property
+    def protections(self):
+        return [
+            {
+                "method": "CooldownPeriod",
+                "stop_duration_candles": 24,
+                "trade_limit": 1
+            },
+            {
+                "method": "StoplossGuard",
+                "lookback_period_candles": 48,
+                "trade_limit": 2,
+                "stop_duration_candles": 48,
+                "only_per_pair": True
+            },
+            {
+                "method": "MaxDrawdown",
+                "lookback_period_candles": 168,
+                "trade_limit": 5,
+                "stop_duration_candles": 24,
+                "max_allowed_drawdown": 0.2
+            }
+        ]
 
     # ------------------ Informative Pairs ------------------
     def informative_pairs(self):
@@ -99,8 +123,8 @@ class SekkaLong(IStrategy):
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Single timeframe (1h) only - no multi-timeframe dependencies
-        df["rsi_1h"] = ta.RSI(df, timeperiod=self.RSI_PERIOD)
-        df["vwap_1h"] = self.compute_vwap(df, self.VWAP_WINDOW)
+        df["rsi_1h"] = ta.RSI(df, timeperiod=self.GENERAL_PERIOD)
+        df["vwap_1h"] = self.compute_vwap(df, self.GENERAL_PERIOD)
         df["vwap_gap_1h"] = np.where(df["vwap_1h"] > 0, (df["close"] / df["vwap_1h"]) - 1.0, 0.0)
         # EMAs
         #df["ema_fast"] = ta.EMA(df, timeperiod=6)
@@ -117,8 +141,8 @@ class SekkaLong(IStrategy):
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         df["enter_long"] = 0
         df.loc[
-            (df["rsi_1h"] <= self.RSI_THRESHOLD) 
-            & (df["vwap_gap_1h"] < self.VWAP_GAP),
+            (df["rsi_1h"] <= self.ENTRY_RSI) 
+            & (df["vwap_gap_1h"] < self.ENTRY_VWAP_GAP),
             #& (df['open'] > df['close'].shift(1))
             #& (df['open'].shift(1) > df['close'].shift(2))
             #& (df['open'].shift(2) > df['close'].shift(3)),
@@ -210,16 +234,16 @@ class SekkaLong(IStrategy):
         except Exception:
             rsi_1h = 50
             
-        if rel >= self.TP_THRESHOLD and rsi_1h >= self.RSI_TP: 
+        if rel >= self.TP_PERCENTAGE and rsi_1h >= self.TP_RSI: 
             #self.logger.info(f"[{current_time}] {pair} | TAKE_PROFIT reached +{rel*100:.2f}%")
             self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
             return "TAKE_PROFIT"
 
         # Stop loss after all DCAs are used
-        #if dca_stage >= (self.DCA_STEP + 1) and rel <= -self.DCA_THRESHOLD:
-        #    self.logger.info(f"[{current_time}] {pair} | STOP_LOSS_AFTER_DCA triggered {rel*100:.2f}%")
-        #    self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
-        #    return "STOP_LOSS_AFTER_DCA"
+        if dca_stage >= (self.DCA_STEP + 1) and rel <= -self.DCA_THRESHOLD:
+            #self.logger.info(f"[{current_time}] {pair} | STOP_LOSS_AFTER_DCA triggered {rel*100:.2f}%")
+            self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
+            return "STOP_LOSS_AFTER_DCA"
 
         return None
 

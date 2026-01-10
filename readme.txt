@@ -222,3 +222,7 @@ Other commands:
 ./gcloud-manage-vm.sh start
 ./gcloud-manage-vm.sh status
 ./gcloud-manage-vm.sh delete
+
+Try optimize:
+- Sell/Exit: TP space = roi
+- Period RSI & VWAP refer to single value.
