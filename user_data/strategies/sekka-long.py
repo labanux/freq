@@ -30,17 +30,17 @@ class SekkaLong(IStrategy):
 
     startup_candle_count = 20
 
+    # Buy
+    DCA_STEP = 10
+    DCA_THRESHOLD= 0.08
+    ENTRY_RSI= 45
+    ENTRY_VWAP_GAP= -0.05
+    
+    GENERAL_PERIOD= 15
+
     # Sell
     TP_PERCENTAGE= 0.01
     TP_RSI= 55
-
-    # Buy
-    DCA_THRESHOLD= 0.09
-    DCA_STEP = 10
-    ENTRY_VWAP_GAP= -0.05
-    ENTRY_RSI= 45
-
-    GENERAL_PERIOD= 19
 
     LEVERAGE = 1
 
