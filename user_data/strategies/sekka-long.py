@@ -32,15 +32,15 @@ class SekkaLong(IStrategy):
 
     # Sell
     TP_PERCENTAGE= 0.01
-    TP_RSI= 60
+    TP_RSI= 55
 
     # Buy
-    DCA_THRESHOLD= 0.1
+    DCA_THRESHOLD= 0.09
     DCA_STEP = 10
     ENTRY_VWAP_GAP= -0.05
-    ENTRY_RSI= 42
+    ENTRY_RSI= 45
 
-    GENERAL_PERIOD= 14
+    GENERAL_PERIOD= 19
 
     LEVERAGE = 1
 
