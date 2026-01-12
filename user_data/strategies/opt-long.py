@@ -7,7 +7,7 @@
 # - Fully compatible with Freqtrade 2025.10 wallet API
 # ================================================================
 
-from freqtrade.strategy import IStrategy, IntParameter, DecimalParameter
+from freqtrade.strategy import IStrategy, IntParameter, DecimalParameter, CategoricalParameter
 from pandas import DataFrame
 import pandas as pd
 import numpy as np
@@ -32,14 +32,16 @@ class OptLong(IStrategy):
 
     # LONG Parameters
     TP_PERCENTAGE = DecimalParameter(0.01, 0.04, default=0.01, decimals=2, space="sell", optimize=True)
-    TP_RSI = IntParameter(55, 60, default=55, space="sell", optimize=True)
+    # TP_RSI = IntParameter(55, 60, default=55, space="sell", optimize=True)
+    TP_RSI = CategoricalParameter([30, 35, 40, 45, 50, 55, 60, 70], default=55, space="sell", optimize=True)
 
-    DCA_THRESHOLD = DecimalParameter(0.04, 0.10, default=0.01, decimals=2, space="buy", optimize=True)
+    # DCA_THRESHOLD = DecimalParameter(0.04, 0.10, default=0.01, decimals=2, space="buy", optimize=True)
+    DCA_THRESHOLD = CategoricalParameter([0.02, 0.04, 0.06, 0.08, 0.10], default=0.01, space="buy", optimize=True)
     DCA_STEP = IntParameter(5, 10, default=5, space="buy", optimize=True)
     ENTRY_VWAP_GAP = DecimalParameter(-0.10, -0.03, default=-0.03, decimals=2, space="buy", optimize=True)
-    ENTRY_RSI = IntParameter(30, 45, default=30, space="buy", optimize=True)
+    ENTRY_RSI = CategoricalParameter([30, 35, 40, 45], default=30, space="buy", optimize=True)
     
-    GENERAL_PERIOD = IntParameter(14, 20, default=14, space="buy", optimize=True)
+    GENERAL_PERIOD = 15 #IntParameter(14, 20, default=14, space="buy", optimize=True)
 
     # Fixed Constants - Note: Use actual values in methods, not .value at class level
     # RSI_PERIOD and VWAP_WINDOW will use GENERAL_PERIOD.value in populate_indicators
@@ -125,7 +127,7 @@ class OptLong(IStrategy):
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Single timeframe (1h) only - no multi-timeframe dependencies
         # Use GENERAL_PERIOD for both RSI and VWAP
-        period = self.GENERAL_PERIOD.value
+        period = self.GENERAL_PERIOD
         df["rsi_1h"] = ta.RSI(df, timeperiod=period)
         df["vwap_1h"] = self.compute_vwap(df, period)
         df["vwap_gap_1h"] = np.where(df["vwap_1h"] > 0, (df["close"] / df["vwap_1h"]) - 1.0, 0.0)
