@@ -19,6 +19,9 @@ user_data/*
 # Allow specific files inside user_data
 !user_data/*.json
 
+# Ignore hyperopt result files
+user_data/hyperopt_OptLong*
+
 # Strategies
 !user_data/strategies/*.py
 
