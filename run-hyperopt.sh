@@ -24,6 +24,7 @@ TIMERANGE="20220101-20251230"
 CONFIG="user_data/config-long.json"
 EPOCHS=2000
 JOBS=-1  # -1 = use all cores
+WALLET=100000  # Starting balance for hyperopt
 AUTO_STOP=false  # Auto-shutdown VM after completion
 FRESH_START=false  # Set to true to start fresh (no resume)
 
@@ -60,6 +61,10 @@ while [[ $# -gt 0 ]]; do
             JOBS="$2"
             shift 2
             ;;
+        --wallet|-w)
+            WALLET="$2"
+            shift 2
+            ;;
         --auto-stop)
             AUTO_STOP=true
             shift
@@ -77,8 +82,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --spaces          Optimization spaces (default: buy sell)"
             echo "  --timerange, -t   Time range (default: 20230101-20251230)"
             echo "  --config, -c      Config file (default: user_data/config-long.json)"
-            echo "  --epochs, -e      Number of epochs (default: 5000)"
+            echo "  --epochs, -e      Number of epochs (default: 2000)"
             echo "  --jobs, -j        Number of parallel jobs, -1=all cores (default: -1)"
+            echo "  --wallet, -w      Starting balance (default: 100000)"
             echo "  --auto-stop       Shutdown VM after completion"
             echo "  --fresh           Start fresh hyperopt (don't resume from previous)"
             echo "  --help, -h        Show this help"
@@ -114,6 +120,7 @@ echo -e "Timerange:   ${YELLOW}${TIMERANGE}${NC}"
 echo -e "Config:      ${YELLOW}${CONFIG}${NC}"
 echo -e "Epochs:      ${YELLOW}${EPOCHS}${NC}"
 echo -e "Jobs:        ${YELLOW}${JOBS}${NC}"
+echo -e "Wallet:      ${YELLOW}${WALLET} USDT${NC}"
 echo ""
 echo -e "Started at:  ${YELLOW}$(date)${NC}"
 echo ""
@@ -137,6 +144,7 @@ docker compose run --rm freqtrade hyperopt \
     --spaces $SPACES \
     --timerange "$TIMERANGE" \
     --config "$CONFIG" \
+    --dry-run-wallet "$WALLET" \
     -j "$JOBS" \
     -e "$EPOCHS" \
     $FRESH_FLAG
