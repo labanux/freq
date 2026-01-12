@@ -20,7 +20,6 @@ user_data/*
 !user_data/*.json
 
 # Strategies
-!user_data/strategies/
 !user_data/strategies/*.py
 
 # Hyperopts
