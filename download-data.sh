@@ -18,7 +18,7 @@ set -e
 #-------------------------------------------------------------------------------
 
 # Timeframes to download (1h for entry, 5m for exit decisions)
-TIMEFRAMES="1h"
+TIMEFRAMES="1h 5m"
 
 # Time range for data
 TIMERANGE="20220101-20251230"

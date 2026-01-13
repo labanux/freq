@@ -149,6 +149,7 @@ docker compose run --rm freqtrade hyperopt \
     --hyperopt-loss "$HYPEROPT_LOSS" \
     --spaces $SPACES \
     --timerange "$TIMERANGE" \
+    --timeframe-detail 5m \
     --config "$CONFIG" \
     --dry-run-wallet "$WALLET" \
     -j "$JOBS" \

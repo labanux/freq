@@ -32,8 +32,7 @@ class OptLong(IStrategy):
 
     # LONG Parameters
     TP_PERCENTAGE = DecimalParameter(0.01, 0.04, default=0.01, decimals=2, space="sell", optimize=True)
-    # TP_RSI = IntParameter(55, 60, default=55, space="sell", optimize=True)
-    TP_RSI = CategoricalParameter([30, 35, 40, 45, 50, 55, 60, 70], default=55, space="sell", optimize=True)
+    # Removed TP_RSI - exit is purely price-based
 
     # DCA_THRESHOLD = DecimalParameter(0.04, 0.10, default=0.01, decimals=2, space="buy", optimize=True)
     DCA_THRESHOLD = CategoricalParameter([0.02, 0.04, 0.06, 0.08, 0.10], default=0.01, space="buy", optimize=True)
@@ -223,28 +222,17 @@ class OptLong(IStrategy):
     def custom_exit(self, pair: str, trade, current_time, current_rate, **kwargs):
         avg_price = trade.open_rate
         dca_stage = trade.nr_of_successful_entries
+        
+        # For spot trading, use current_rate directly
         rel = (current_rate / avg_price) - 1.0
 
-        try:
-            df, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-            rsi_1h = df.iloc[-1]["rsi_1h"]
-        except Exception:
-            rsi_1h = 50
-            
-        if rel >= self.TP_PERCENTAGE.value and rsi_1h >= self.TP_RSI.value: 
-            #self.logger.info(f"[{current_time}] {pair} | TAKE_PROFIT reached +{rel*100:.2f}%")
-            #self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
+        # Take profit based purely on price percentage
+        if rel >= self.TP_PERCENTAGE.value:
             return "TAKE_PROFIT"
 
         # Stop loss after all DCAs are used
         if dca_stage >= (self.DCA_STEP.value + 1) and rel <= -self.DCA_THRESHOLD.value:
-        #    self.logger.info(f"[{current_time}] {pair} | STOP_LOSS_AFTER_DCA triggered {rel*100:.2f}%")
             self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
             return "STOP_LOSS_AFTER_DCA"
 
         return None
-
-    def leverage(self, pair: str, current_time: datetime, current_rate: float,
-                 proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
-                 **kwargs) -> float:
-        return self.LEVERAGE
