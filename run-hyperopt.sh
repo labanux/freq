@@ -25,6 +25,7 @@ CONFIG="user_data/config-long.json"
 EPOCHS=2000
 JOBS=-1  # -1 = use all cores
 WALLET=100000  # Starting balance for hyperopt
+UPLOAD_TO_GCS=true  # Upload results to GCS by default
 AUTO_STOP=false  # Auto-shutdown VM after completion
 FRESH_START=false  # Set to true to start fresh (no resume)
 
@@ -69,6 +70,10 @@ while [[ $# -gt 0 ]]; do
             AUTO_STOP=true
             shift
             ;;
+        --no-upload)
+            UPLOAD_TO_GCS=false
+            shift
+            ;;
         --fresh)
             FRESH_START=true
             shift
@@ -85,6 +90,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --epochs, -e      Number of epochs (default: 2000)"
             echo "  --jobs, -j        Number of parallel jobs, -1=all cores (default: -1)"
             echo "  --wallet, -w      Starting balance (default: 100000)"
+            echo "  --no-upload       Skip uploading results to GCS"
             echo "  --auto-stop       Shutdown VM after completion"
             echo "  --fresh           Start fresh hyperopt (don't resume from previous)"
             echo "  --help, -h        Show this help"
@@ -149,6 +155,9 @@ docker compose run --rm freqtrade hyperopt \
     -e "$EPOCHS" \
     $FRESH_FLAG
 
+# Capture exit code
+HYPEROPT_EXIT_CODE=$?
+
 #-------------------------------------------------------------------------------
 # Done
 #-------------------------------------------------------------------------------
@@ -159,9 +168,24 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "Finished at: ${YELLOW}$(date)${NC}"
 echo ""
 
+# Skip upload if hyperopt was cancelled or failed
+if [ $HYPEROPT_EXIT_CODE -ne 0 ]; then
+    echo -e "${YELLOW}⚠ Hyperopt was cancelled or failed (exit code: $HYPEROPT_EXIT_CODE)${NC}"
+    echo -e "${YELLOW}  Skipping GCS upload.${NC}"
+    exit $HYPEROPT_EXIT_CODE
+fi
+
 #-------------------------------------------------------------------------------
 # Export and upload best result to GCloud Storage
 #-------------------------------------------------------------------------------
+if [ "$UPLOAD_TO_GCS" = false ]; then
+    echo -e "${YELLOW}Skipping GCS upload (--no-upload specified)${NC}"
+    echo ""
+    echo -e "${GREEN}To view results locally:${NC}"
+    echo "  docker compose run --rm freqtrade hyperopt-show --best --config $CONFIG"
+    exit 0
+fi
+
 BUCKET_NAME="hyperopt_result"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULT_FILE="hyperopt_${STRATEGY}_${TIMESTAMP}.json"

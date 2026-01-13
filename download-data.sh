@@ -1,16 +1,14 @@
 #!/bin/bash
 #===============================================================================
-# Freqtrade Data Downloader
+# Freqtrade Data Downloader (Spot Only)
 # 
-# Downloads historical data for both Spot and Futures trading
+# Downloads historical spot data for trading
 #
 # Usage:
 #   ./download-data.sh                    # Use defaults
 #   ./download-data.sh --timerange 20230101-20251230
 #   ./download-data.sh --timeframes "1h 4h 1d"
 #   ./download-data.sh --pairs "BTC/USDT ETH/USDT"
-#   ./download-data.sh --spot-only        # Only download spot data
-#   ./download-data.sh --futures-only     # Only download futures data
 #===============================================================================
 
 set -e
@@ -19,24 +17,19 @@ set -e
 # DEFAULT CONFIGURATION - Modify these as needed
 #-------------------------------------------------------------------------------
 
-# Timeframes to download (space-separated)
+# Timeframes to download (1h for entry, 5m for exit decisions)
 TIMEFRAMES="1h"
 
 # Time range for data
 TIMERANGE="20220101-20251230"
 
-# Pairs for Spot trading (space-separated)
-SPOT_PAIRS="SOL/USDT BTC/USDT ADA/USDT XRP/USDT LTC/USDT ETH/USDT DOGE/USDT ENA/USDT ZEC/USDT BNB/USDT"
-
-# Pairs for Futures trading (auto-generated from SPOT_PAIRS if not specified)
-FUTURES_PAIRS=""
+# Pairs for trading (space-separated)
+PAIRS="BTC/USDT ETH/USDT SOL/USDT XRP/USDT LTC/USDT ADA/USDT DOGE/USDT ENA/USDT ZEC/USDT"
 
 # Exchange
 EXCHANGE="binance"
 
 # Flags
-DOWNLOAD_SPOT=true
-DOWNLOAD_FUTURES=true
 ERASE_EXISTING=true
 
 #-------------------------------------------------------------------------------
@@ -44,33 +37,21 @@ ERASE_EXISTING=true
 #-------------------------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --timeframes)
+        --timeframes|-t)
             TIMEFRAMES="$2"
             shift 2
             ;;
-        --timerange)
+        --timerange|-r)
             TIMERANGE="$2"
             shift 2
             ;;
-        --pairs)
-            SPOT_PAIRS="$2"
+        --pairs|-p)
+            PAIRS="$2"
             shift 2
             ;;
-        --futures-pairs)
-            FUTURES_PAIRS="$2"
-            shift 2
-            ;;
-        --exchange)
+        --exchange|-e)
             EXCHANGE="$2"
             shift 2
-            ;;
-        --spot-only)
-            DOWNLOAD_FUTURES=false
-            shift
-            ;;
-        --futures-only)
-            DOWNLOAD_SPOT=false
-            shift
             ;;
         --no-erase)
             ERASE_EXISTING=false
@@ -80,15 +61,12 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: ./download-data.sh [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --timeframes \"1h 4h 1d\"    Timeframes to download (space-separated)"
-            echo "  --timerange 20220101-20251230  Date range for data"
-            echo "  --pairs \"BTC/USDT ETH/USDT\"   Spot pairs (space-separated)"
-            echo "  --futures-pairs \"...\"         Futures pairs (auto-generated if not set)"
-            echo "  --exchange binance             Exchange name"
-            echo "  --spot-only                    Only download spot data"
-            echo "  --futures-only                 Only download futures data"
-            echo "  --no-erase                     Don't erase existing data"
-            echo "  --help                         Show this help"
+            echo "  --timeframes, -t \"1h\"         Timeframes to download (default: 1h)"
+            echo "  --timerange, -r 20220101-20251230  Date range for data"
+            echo "  --pairs, -p \"BTC/USDT ETH/USDT\"   Pairs (space-separated)"
+            echo "  --exchange, -e binance           Exchange name"
+            echo "  --no-erase                       Don't erase existing data"
+            echo "  --help, -h                       Show this help"
             exit 0
             ;;
         *)
@@ -98,18 +76,6 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
-
-#-------------------------------------------------------------------------------
-# Auto-generate futures pairs from spot pairs if not specified
-#-------------------------------------------------------------------------------
-if [ -z "$FUTURES_PAIRS" ]; then
-    FUTURES_PAIRS=""
-    for pair in $SPOT_PAIRS; do
-        # Convert SOL/USDT to SOL/USDT:USDT
-        FUTURES_PAIRS="$FUTURES_PAIRS ${pair}:USDT"
-    done
-    FUTURES_PAIRS=$(echo $FUTURES_PAIRS | xargs)  # Trim whitespace
-fi
 
 #-------------------------------------------------------------------------------
 # Build erase flag
@@ -131,52 +97,29 @@ NC='\033[0m'
 # Display configuration
 #-------------------------------------------------------------------------------
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  Freqtrade Data Downloader${NC}"
+echo -e "${BLUE}  Freqtrade Data Downloader (Spot)${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 echo -e "Exchange:    ${YELLOW}${EXCHANGE}${NC}"
 echo -e "Timeframes:  ${YELLOW}${TIMEFRAMES}${NC}"
 echo -e "Timerange:   ${YELLOW}${TIMERANGE}${NC}"
-echo -e "Spot Pairs:  ${YELLOW}${SPOT_PAIRS}${NC}"
-echo -e "Futures:     ${YELLOW}${FUTURES_PAIRS}${NC}"
+echo -e "Pairs:       ${YELLOW}${PAIRS}${NC}"
 echo -e "Erase:       ${YELLOW}${ERASE_EXISTING}${NC}"
 echo ""
 
 #-------------------------------------------------------------------------------
 # Download Spot Data
 #-------------------------------------------------------------------------------
-if [ "$DOWNLOAD_SPOT" = true ]; then
-    echo -e "${YELLOW}[1/2] Downloading SPOT data...${NC}"
-    docker compose run --rm freqtrade download-data \
-        --exchange "$EXCHANGE" \
-        --trading-mode spot \
-        --timeframes $TIMEFRAMES \
-        --timerange "$TIMERANGE" \
-        $ERASE_FLAG \
-        --pairs $SPOT_PAIRS
-    echo -e "${GREEN}✓ Spot data downloaded!${NC}"
-    echo ""
-fi
+echo -e "${YELLOW}Downloading SPOT data (${TIMEFRAMES})...${NC}"
+docker compose run --rm freqtrade download-data \
+    --exchange "$EXCHANGE" \
+    --trading-mode spot \
+    --timeframes $TIMEFRAMES \
+    --timerange "$TIMERANGE" \
+    $ERASE_FLAG \
+    --pairs $PAIRS
 
-#-------------------------------------------------------------------------------
-# Download Futures Data
-#-------------------------------------------------------------------------------
-if [ "$DOWNLOAD_FUTURES" = true ]; then
-    echo -e "${YELLOW}[2/2] Downloading FUTURES data...${NC}"
-    docker compose run --rm freqtrade download-data \
-        --exchange "$EXCHANGE" \
-        --trading-mode futures \
-        --timeframes $TIMEFRAMES \
-        --timerange "$TIMERANGE" \
-        $ERASE_FLAG \
-        --pairs $FUTURES_PAIRS
-    echo -e "${GREEN}✓ Futures data downloaded!${NC}"
-    echo ""
-fi
-
-#-------------------------------------------------------------------------------
-# Done
-#-------------------------------------------------------------------------------
+echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  ✓ Data Download Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"

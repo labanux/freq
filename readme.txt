@@ -13,7 +13,7 @@ docker exec -it freqtrade freqtrade download-data \
 docker exec -it freqtrade freqtrade download-data \
   --exchange binance \
   --trading-mode futures \
-  --pairs SOL/USDT:USDT BTC/USDT:USDT ZEC/USDT:USDT XRP/USDT:USDT LTC/USDT:USDT ETH/USDT:USDT ENA/USDT:USDT \
+  --pairs SOL/USDT:USDT BTC/USDT:USDT XRP/USDT:USDT LTC/USDT:USDT ETH/USDT:USDT ENA/USDT:USDT ZEC/USDT:USDT \
   --timeframes 1d \
   --timerange 20220101-20251230 --erase
 
@@ -82,6 +82,17 @@ docker compose run --rm freqtrade hyperopt \
   --spaces buy sell \
   --timerange 20241101-20251031 \
   -e 100
+
+Show latest best:
+docker compose run --rm freqtrade hyperopt-show --best --config user_data/config-long.json
+
+List & filter:
+docker compose run --rm freqtrade hyperopt-list \
+  --config user_data/config-long.json --profitable \
+  --min-total-profit 5000 --min-trades 300
+
+Specific Epochs:
+docker compose run --rm freqtrade hyperopt-show -n 5 --print-json --config user_data/config-long.json
 
 # DOCKER
 Installation
@@ -223,3 +234,52 @@ Other commands:
 ./gcloud-manage-vm.sh status
 ./gcloud-manage-vm.sh delete
 ./gcloud-manage-vm.sh best
+
+
+Notes:
+TP_THRESHOLD = 0.01
+    DCA_THRESHOLD = 0.1
+    RSI_THRESHOLD = 42 # Hourly RSI
+    DCA_STEP = 10
+    VWAP_GAP = -0.05 # Hourly VWAP gap
+    RSI_TP = 60
+    
+    RSI_PERIOD = 14
+    VWAP_WINDOW = 14
+
+2022-2025= 695.24 
+2023-2025= 544.94
+2024-2025= 434.84
+2025-2025= 168.01
+
+# Buy
+DCA_STEP = 10
+DCA_THRESHOLD= 0.1
+RSI_THRESHOLD= 57
+VWAP_GAP= -0.06
+
+VWAP_WINDOW= 10
+RSI_PERIOD= 13
+
+# Sell
+RSI_TP= 63
+TP_THRESHOLD= 0.02
+
+
+203/3000:    386 trades. 378/0/8 Wins/Draws/Losses. Avg profit   3.91%. Median profit   2.92%. Total profit 4721.36867609 USDT ( 472.14%). Avg duration 14 days, 10:18:00 min. Objective: -386.00000
+
+
+    # Buy parameters:
+    buy_params = {
+        "DCA_STEP": 10,
+        "DCA_THRESHOLD": 0.09,
+        "ENTRY_RSI": 45,
+        "ENTRY_VWAP_GAP": -0.05,
+        "GENERAL_PERIOD": 19,
+    }
+
+    # Sell parameters:
+    sell_params = {
+        "TP_PERCENTAGE": 0.01,
+        "TP_RSI": 55,
+    }
