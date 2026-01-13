@@ -1,10 +1,8 @@
 # ================================================================
-# SekkaStrat v14n – Fixed DCA trigger not executing (Freqtrade 2025.10)
+# SekkaLong – Production Strategy (Static Parameters)
 # ---------------------------------------------------------------
-# Fixes:
-# - DCA now executes correctly by returning actual stake amount (est_stake)
-# - Preserves 3-step recursive DCA at -3% from avg price
-# - Fully compatible with Freqtrade 2025.10 wallet API
+# Same logic as OptLong, but with static (non-optimizable) parameters.
+# Use this for live trading after optimizing with OptLong.
 # ================================================================
 
 from freqtrade.strategy import IStrategy
@@ -30,23 +28,25 @@ class SekkaLong(IStrategy):
 
     startup_candle_count = 20
 
-    # Buy
+    # ==============================================================
+    # STATIC PARAMETERS - Update these from hyperopt results
+    # ==============================================================
+    
+    # Buy parameters
     DCA_STEP = 10
-    DCA_THRESHOLD= 0.08
-    ENTRY_RSI= 45
-    ENTRY_VWAP_GAP= -0.05
-    
-    GENERAL_PERIOD= 15
+    DCA_THRESHOLD = 0.02
+    ENTRY_RSI = 45
+    ENTRY_VWAP_GAP = -0.07
+    GENERAL_PERIOD = 15
 
-    # Sell
-    TP_PERCENTAGE= 0.01
-    TP_RSI= 55
+    # Sell parameters
+    TP_PERCENTAGE = 0.01
 
-    LEVERAGE = 1
+    # ==============================================================
 
-    minimal_roi = {}
+    minimal_roi = {}  # We use custom_exit instead
     stoploss = -0.99
-    
+
     #max_entry_position_adjustment = -1
 
     logger = logging.getLogger(__name__)
@@ -79,15 +79,12 @@ class SekkaLong(IStrategy):
 
     # ------------------ Informative Pairs ------------------
     def informative_pairs(self):
+        # Only 1h needed in code
+        # For backtest accuracy, use: --timeframe-detail 5m
         pairs = self.dp.current_whitelist()
         informative_pairs = []
         for pair in pairs:
-            # Assume Futures pair 'BTC/USDT:USDT' -> Spot 'BTC/USDT'
-            if ":" in pair:
-                spot_pair = pair.split(':')[0]
-            else:
-                spot_pair = pair # Already spot?
-            informative_pairs.append((spot_pair, self.timeframe, 'spot'))
+            informative_pairs.append((pair, self.timeframe))
         return informative_pairs
 
     # ------------------ Plot Config ------------------
@@ -122,19 +119,13 @@ class SekkaLong(IStrategy):
         return vwap
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
-        # Single timeframe (1h) only - no multi-timeframe dependencies
-        df["rsi_1h"] = ta.RSI(df, timeperiod=self.GENERAL_PERIOD)
-        df["vwap_1h"] = self.compute_vwap(df, self.GENERAL_PERIOD)
+        period = self.GENERAL_PERIOD
+        
+        # Calculate indicators directly on spot data
+        df["rsi_1h"] = ta.RSI(df, timeperiod=period)
+        df["vwap_1h"] = self.compute_vwap(df, period)
         df["vwap_gap_1h"] = np.where(df["vwap_1h"] > 0, (df["close"] / df["vwap_1h"]) - 1.0, 0.0)
-        # EMAs
-        #df["ema_fast"] = ta.EMA(df, timeperiod=6)
-        #df["ema_slow"] = ta.EMA(df, timeperiod=24)
-
-        # MACD
-        #macd = ta.MACD(df)
-        #df["macd"] = macd["macd"]
-        #df["macdsignal"] = macd["macdsignal"]
-        #df["macdhist"] = macd["macdhist"]
+        
         return df
 
     # Freqtrade 2025.10+ requires populate_entry_trend/populate_exit_trend
@@ -143,14 +134,6 @@ class SekkaLong(IStrategy):
         df.loc[
             (df["rsi_1h"] <= self.ENTRY_RSI) 
             & (df["vwap_gap_1h"] < self.ENTRY_VWAP_GAP),
-            #& (df['open'] > df['close'].shift(1))
-            #& (df['open'].shift(1) > df['close'].shift(2))
-            #& (df['open'].shift(2) > df['close'].shift(3)),
-            #& (df["ema_fast"] > df["ema_slow"]), 
-            # EMA cross upward
-            #& (df["macdhist"] > 0), 
-            # Histogram positive
-            # (df["macd"] > df["macdsignal"]),
             "enter_long",
         ] = 1
         return df
@@ -186,7 +169,6 @@ class SekkaLong(IStrategy):
 
     # ------------------ DCA Logic ------------------
     def adjust_trade_position(self, trade, current_time, current_rate, current_profit, **kwargs):
-        #self.logger.info(f"[{current_time}] {trade.pair} | DCA check stage={trade.nr_of_successful_entries}")
         if self._last_dca_stage is None:
             self._last_dca_stage = {}
 
@@ -212,11 +194,6 @@ class SekkaLong(IStrategy):
             next_stage = current_stage + 1
             tag = f"DCA_{next_stage}"
             self._last_dca_stage[trade_id] = current_stage
-
-            #self.logger.info(
-            #    f"[{current_time}] {trade.pair} | Triggering {tag} at {current_rate:.4f} "
-            #    f"({drop_ratio*100:.2f}%) | Free={free_balance:.2f} Stake={est_stake:.2f}"
-            #)
             trade.enter_tag = tag
             return est_stake  # ✅ FIXED: execute with actual stake
 
@@ -226,28 +203,17 @@ class SekkaLong(IStrategy):
     def custom_exit(self, pair: str, trade, current_time, current_rate, **kwargs):
         avg_price = trade.open_rate
         dca_stage = trade.nr_of_successful_entries
+        
+        # For spot trading, use current_rate directly
         rel = (current_rate / avg_price) - 1.0
 
-        try:
-            df, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-            rsi_1h = df.iloc[-1]["rsi_1h"]
-        except Exception:
-            rsi_1h = 50
-            
-        if rel >= self.TP_PERCENTAGE and rsi_1h >= self.TP_RSI: 
-            #self.logger.info(f"[{current_time}] {pair} | TAKE_PROFIT reached +{rel*100:.2f}%")
-            self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
+        # Take profit based purely on price percentage
+        if rel >= self.TP_PERCENTAGE:
             return "TAKE_PROFIT"
 
         # Stop loss after all DCAs are used
         if dca_stage >= (self.DCA_STEP + 1) and rel <= -self.DCA_THRESHOLD:
-            #self.logger.info(f"[{current_time}] {pair} | STOP_LOSS_AFTER_DCA triggered {rel*100:.2f}%")
             self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
             return "STOP_LOSS_AFTER_DCA"
 
         return None
-
-    def leverage(self, pair: str, current_time: datetime, current_rate: float,
-                 proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
-                 **kwargs) -> float:
-        return self.LEVERAGE

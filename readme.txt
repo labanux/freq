@@ -38,17 +38,19 @@ docker compose restart freqtrade
 docker exec -it freqtrade freqtrade backtesting \
   --strategy SekkaHour \
   --dry-run-wallet 100000 \
+  --timeframe-detail 5m \
   --timerange 20220101-20251230 \
-  --config user_data/config-hour.json \
+  --config user_data/config-long.json \
   -p XRP/USDT 
 
-# Futures
+# SekkaLong
 docker exec -it freqtrade freqtrade backtesting \
   --strategy SekkaLong \
   --dry-run-wallet 100000 \
+  --timeframe-detail 5m \
   --timerange 20220101-20251230 \
   --config user_data/config-long.json \
-  --pairs BTC/USDT:USDT
+  --pairs BTC/USDT
 
 docker exec -it freqtrade freqtrade backtesting \
   --strategy SekkaStrat \
