@@ -134,11 +134,11 @@ echo ""
 #-------------------------------------------------------------------------------
 # Run Hyperopt
 #-------------------------------------------------------------------------------
-# Freqtrade auto-resumes by default, use --no-resume for fresh start
-FRESH_FLAG=""
+# Handle fresh start by removing old results
 if [ "$FRESH_START" = true ]; then
-    FRESH_FLAG="--no-resume"
-    echo -e "${YELLOW}Mode: Fresh start (ignoring previous results)${NC}"
+    echo -e "${YELLOW}Mode: Fresh start (removing previous results)${NC}"
+    rm -f user_data/hyperopt_results/strategy_${STRATEGY}_*.fthypt
+    rm -f user_data/strategies/${STRATEGY,,}.json
 else
     echo -e "${YELLOW}Mode: Resume from previous run (use --fresh to start new)${NC}"
 fi
@@ -153,8 +153,7 @@ docker compose run --rm freqtrade hyperopt \
     --config "$CONFIG" \
     --dry-run-wallet "$WALLET" \
     -j "$JOBS" \
-    -e "$EPOCHS" \
-    $FRESH_FLAG
+    -e "$EPOCHS"
 
 # Capture exit code
 HYPEROPT_EXIT_CODE=$?
