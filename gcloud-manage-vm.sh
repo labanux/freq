@@ -68,6 +68,7 @@ show_help() {
     echo "  run      Run hyperopt (foreground)"
     echo "  run-bg   Run hyperopt in background"
     echo "  check    Check if hyperopt is running"
+    echo "  progress Show epochs completed + best result"
     echo "  output   View hyperopt output log"
     echo "  best     Show current best hyperopt results"
     echo "  kill     Stop running hyperopt"
@@ -220,6 +221,31 @@ case "$COMMAND" in
                 docker compose run --rm freqtrade hyperopt-show --best --config user_data/config-long.json --hyperopt-filename "$FILENAME" 2>/dev/null
             else
                 echo "No hyperopt results found"
+            fi
+        '
+        ;;
+
+    progress)
+        echo -e "${YELLOW}Checking hyperopt progress on ${INSTANCE_NAME}...${NC}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- '
+            cd /opt/freqtrade
+            # Find the latest .fthypt file
+            LATEST_FILE=$(ls -t user_data/hyperopt_results/*.fthypt 2>/dev/null | head -1)
+            if [ -n "$LATEST_FILE" ]; then
+                FILENAME=$(basename "$LATEST_FILE")
+                # Count epochs in file (each line is one epoch result)
+                EPOCH_COUNT=$(wc -l < "$LATEST_FILE")
+                # Get file modification time
+                MOD_TIME=$(stat -c "%y" "$LATEST_FILE" 2>/dev/null | cut -d. -f1)
+                echo "=== Hyperopt Progress ==="
+                echo "File: $FILENAME"
+                echo "Epochs completed: $EPOCH_COUNT"
+                echo "Last update: $MOD_TIME"
+                echo ""
+                echo "=== Best Result So Far ==="
+                docker compose run --rm freqtrade hyperopt-show --best --config user_data/config-long.json --hyperopt-filename "$FILENAME" 2>/dev/null | head -20
+            else
+                echo "No hyperopt results found yet"
             fi
         '
         ;;

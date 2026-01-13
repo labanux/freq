@@ -193,31 +193,6 @@ sudo swapon /swapfile
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 
-30 Dec
-docker exec -it freqtrade freqtrade hyperopt --strategy OptLong --hyperopt-loss ZeroLossMaxTrades --spaces buy sell --timerange 20230101-20251228 --config user_data/config-long.json -e 5000
-Change to include Leverage
-
-
-# Buy parameters:
-    buy_params = {
-        "DCA_STEP": 10,
-        "DCA_THRESHOLD": 0.1,
-        "RSI_THRESHOLD": 42,
-        "VWAP_GAP": -0.05,
-    }
-
-    # Sell parameters:
-    sell_params = {
-        "LEVERAGE": 1,
-        "RSI_TP": 60,
-        "TP_THRESHOLD": 0.01,
-    }
-
-    TP_THRESHOLD = 0.01
-    DCA_THRESHOLD = 0.1
-    RSI_THRESHOLD = 42
-
-
 # Pre-Requisite Shell:
 gcloud services enable cloudbuild.googleapis.com
 gcloud services enable run.googleapis.com

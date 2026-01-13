@@ -17,8 +17,8 @@ set -e
 # DEFAULT CONFIGURATION - Modify these as needed
 #-------------------------------------------------------------------------------
 
-# Timeframes to download (1h for entry, 5m for exit decisions)
-TIMEFRAMES="1h 5m"
+# Timeframes to download (1h for entry, 15m for trade detail)
+TIMEFRAMES="1h 15m"
 
 # Time range for data
 TIMERANGE="20211231-20260101"
