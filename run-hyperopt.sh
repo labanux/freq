@@ -25,6 +25,7 @@ CONFIG="user_data/config-long.json"
 EPOCHS=2000
 JOBS=-1  # -1 = use all cores
 WALLET=100000  # Starting balance for hyperopt
+TIMEFRAME_DETAIL="30m"  # Timeframe detail for more accurate simulation
 UPLOAD_TO_GCS=true  # Upload results to GCS by default
 AUTO_STOP=false  # Auto-shutdown VM after completion
 FRESH_START=false  # Set to true to start fresh (no resume)
@@ -78,6 +79,10 @@ while [[ $# -gt 0 ]]; do
             FRESH_START=true
             shift
             ;;
+        --detail|-d)
+            TIMEFRAME_DETAIL="$2"
+            shift 2
+            ;;
         --help|-h)
             echo "Usage: ./run-hyperopt.sh [OPTIONS]"
             echo ""
@@ -85,12 +90,13 @@ while [[ $# -gt 0 ]]; do
             echo "  --strategy, -s    Strategy name (default: OptLong)"
             echo "  --loss            Hyperopt loss function (default: ZeroLossMaxTrades)"
             echo "  --spaces          Optimization spaces (default: buy sell)"
-            echo "  --timerange, -t   Time range (default: 20230101-20251230)"
+            echo "  --timerange, -t   Time range (default: 20220101-20251230)"
             echo "  --config, -c      Config file (default: user_data/config-long.json)"
             echo "  --epochs, -e      Number of epochs (default: 2000)"
             echo "  --jobs, -j        Number of parallel jobs, -1=all cores (default: -1)"
             echo "  --wallet, -w      Starting balance (default: 100000)"
             echo "  --no-upload       Skip uploading results to GCS"
+            echo "  --detail, -d      Timeframe detail for simulation (default: 30m)"
             echo "  --auto-stop       Shutdown VM after completion"
             echo "  --fresh           Start fresh hyperopt (don't resume from previous)"
             echo "  --help, -h        Show this help"
@@ -134,11 +140,17 @@ echo ""
 #-------------------------------------------------------------------------------
 # Run Hyperopt
 #-------------------------------------------------------------------------------
-# Handle fresh start by removing old results
+# Always delete strategy JSON to ensure parameters come from .py file
+# Freqtrade uses .py filename (with dashes), not class name
+# OptLong -> opt-long.json, SekkaLong -> sekka-long.json
+STRATEGY_LOWER=$(echo "$STRATEGY" | sed 's/\([A-Z]\)/-\1/g' | sed 's/^-//' | tr '[:upper:]' '[:lower:]')
+rm -f "user_data/strategies/${STRATEGY_LOWER}.json"
+echo -e "${YELLOW}Cleared strategy params cache: ${STRATEGY_LOWER}.json${NC}"
+
+# Handle fresh start - remove old hyperopt results
 if [ "$FRESH_START" = true ]; then
     echo -e "${YELLOW}Mode: Fresh start (removing previous results)${NC}"
     rm -f user_data/hyperopt_results/strategy_${STRATEGY}_*.fthypt
-    rm -f user_data/strategies/${STRATEGY,,}.json
 else
     echo -e "${YELLOW}Mode: Resume from previous run (use --fresh to start new)${NC}"
 fi
@@ -149,7 +161,7 @@ docker compose run --rm freqtrade hyperopt \
     --hyperopt-loss "$HYPEROPT_LOSS" \
     --spaces $SPACES \
     --timerange "$TIMERANGE" \
-    --timeframe-detail 15m \
+    --timeframe-detail "$TIMEFRAME_DETAIL" \
     --config "$CONFIG" \
     --dry-run-wallet "$WALLET" \
     -j "$JOBS" \
@@ -167,6 +179,18 @@ echo -e "${GREEN}  ✓ Hyperopt Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo -e "Finished at: ${YELLOW}$(date)${NC}"
 echo ""
+
+# Move parameters file from strategies to hyperopt_results
+STRATEGY_LOWER=$(echo "$STRATEGY" | tr '[:upper:]' '[:lower:]')
+PARAMS_FILE="user_data/strategies/${STRATEGY_LOWER}.json"
+if [ -f "$PARAMS_FILE" ]; then
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    DEST_FILE="user_data/hyperopt_results/${STRATEGY}_params_${TIMESTAMP}.json"
+    mv "$PARAMS_FILE" "$DEST_FILE"
+    echo -e "${GREEN}✓ Parameters saved to: ${DEST_FILE}${NC}"
+    echo ""
+fi
+
 
 # Skip upload if hyperopt was cancelled or failed
 if [ $HYPEROPT_EXIT_CODE -ne 0 ]; then
