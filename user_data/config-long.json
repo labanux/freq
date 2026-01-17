@@ -11,13 +11,10 @@
     "ccxt_async_config": {},
     "pair_whitelist": [
       "BTC/USDT",
-      "ETH/USDT",
-      "LTC/USDT",
-      "SOL/USDT",
-      "XRP/USDT"
+      "ETH/USDT"
     ]
   },
-  "max_open_trades": 5,
+  "max_open_trades": 2,
   "telegram": {
     "enabled": true,
     "token": "",
