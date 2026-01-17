@@ -1,11 +1,13 @@
 # ================================================================
-# SekkaLong – Production Strategy (Static Parameters)
+# SekkaStrat v14n – Fixed DCA trigger not executing (Freqtrade 2025.10)
 # ---------------------------------------------------------------
-# Same logic as OptLong, but with static (non-optimizable) parameters.
-# Use this for live trading after optimizing with OptLong.
+# Fixes:
+# - DCA now executes correctly by returning actual stake amount (est_stake)
+# - Preserves 3-step recursive DCA at -3% from avg price
+# - Fully compatible with Freqtrade 2025.10 wallet API
 # ================================================================
 
-from freqtrade.strategy import IStrategy
+from freqtrade.strategy import IStrategy, IntParameter, DecimalParameter, CategoricalParameter
 from pandas import DataFrame
 import pandas as pd
 import numpy as np
@@ -15,7 +17,7 @@ from datetime import datetime
 from typing import Optional
 
 
-class SekkaLong(IStrategy):
+class OptLocal(IStrategy):
     timeframe = "1h"
     informative_timeframes = []  # Single timeframe only - no multi-timeframe
     process_only_new_candles = True
@@ -28,66 +30,92 @@ class SekkaLong(IStrategy):
 
     startup_candle_count = 20
 
-    # ==============================================================
-    # STATIC PARAMETERS - Update these from hyperopt results
-    # ==============================================================
+    # LONG Parameters
+    TP_PERCENTAGE = DecimalParameter(0.03, 0.03, default=0.03, decimals=2, space="sell", optimize=False)
+    TP_RSI = CategoricalParameter([45, 50, 55, 60, 65], default=45, space="sell", optimize=True)
+
+    DCA_THRESHOLD = CategoricalParameter([0.04, 0.06, 0.08], default=0.04, space="buy", optimize=False)
+    DCA_STEP = IntParameter(3, 5, default=5, space="buy", optimize=True)
+    ENTRY_VWAP_GAP = DecimalParameter(-0.05, -0.05, default=-0.05, decimals=2, space="buy", optimize=False) 
+    ENTRY_RSI = CategoricalParameter([40,45,50], default=45, space="buy", optimize=True)
     
-    # Buy parameters
-    DCA_STEP = 5
-    DCA_THRESHOLD = 0.02
-    ENTRY_RSI = 45
-    ENTRY_VWAP_GAP = -0.05
-    GENERAL_PERIOD = 14
+    # Exit control
+    EXIT_AFTER_DCA = CategoricalParameter([True, False], default=True, space="sell", optimize=True)
+    EXIT_TIMEFRAME = "15m"  # Timeframe for exit RSI check (match with --timeframe-detail)
+    
+    GENERAL_PERIOD = 14 #IntParameter(14, 20, default=14, space="buy", optimize=True)
 
-    # Sell parameters
-    TP_PERCENTAGE = 0.02
-    TP_RSI = 60
-    EXIT_TIMEFRAME= "5m"
-    COOLDOWN_HOURS = 24  # Hours to wait before re-entering after stop loss
-    stoploss = -0.7
-
-
-    # ==============================================================
+    # Fixed Constants - Note: Use actual values in methods, not .value at class level
+    # RSI_PERIOD and VWAP_WINDOW will use GENERAL_PERIOD.value in populate_indicators
 
     minimal_roi = {}  # We use custom_exit instead
-    stoploss = -0.7
+    stoploss = -0.99
+    LEVERAGE = 1
 
     #max_entry_position_adjustment = -1
 
     logger = logging.getLogger(__name__)
     _last_dca_stage = None
-    _stoploss_cooldown = {}  # Track pairs in cooldown after STOP_LOSS_AFTER_DCA
-    
+
+    # Protections (Freqtrade 2025.11+ requires in strategy, not config)
+    @property
+    def protections(self):
+        return [
+            {
+                "method": "CooldownPeriod",
+                "stop_duration_candles": 24,
+                "trade_limit": 1
+            },
+            {
+                "method": "StoplossGuard",
+                "lookback_period_candles": 48,
+                "trade_limit": 2,
+                "stop_duration_candles": 48,
+                "only_per_pair": True
+            },
+            {
+                "method": "MaxDrawdown",
+                "lookback_period_candles": 168,
+                "trade_limit": 5,
+                "stop_duration_candles": 24,
+                "max_allowed_drawdown": 0.2
+            }
+        ]
 
     # ------------------ Informative Pairs ------------------
     def informative_pairs(self):
         pairs = self.dp.current_whitelist()
         informative_pairs = []
         for pair in pairs:
+            # Assume Futures pair 'BTC/USDT:USDT' -> Spot 'BTC/USDT'
+            if ":" in pair:
+                spot_pair = pair.split(':')[0]
+            else:
+                spot_pair = pair # Already spot?
             # Add main timeframe (for entry indicators)
-            informative_pairs.append((pair, self.timeframe))
-            # Add exit timeframe (for exit RSI calculation)
+            informative_pairs.append((spot_pair, self.timeframe))
+            # Add exit timeframe (for exit RSI)
             if self.EXIT_TIMEFRAME != self.timeframe:
-                informative_pairs.append((pair, self.EXIT_TIMEFRAME))
+                informative_pairs.append((spot_pair, self.EXIT_TIMEFRAME))
         return informative_pairs
 
     # ------------------ Plot Config ------------------
     plot_config = {
         "main_plot": {
-            "vwap_1h": {"color": "orange"}
-            #"ema_fast": {"color": "yellow"},
-            #"ema_slow": {"color": "blue"},
-        }
-        #"subplots": {
-        #    "RSI": {
-        #        "rsi_1h": {"color": "red"},
-        #    },
-        #    "MACD": {
-        #        "macd": {"color": "blue"},
-        #        "macdsignal": {"color": "orange"},
-        #        "macdhist": {"color": "green", "type": "bar"},
-        #    },
-        #},
+            "vwap_1h": {"color": "orange"},
+            "ema_fast": {"color": "yellow"},
+            "ema_slow": {"color": "blue"},
+        },
+        "subplots": {
+            "RSI": {
+                "rsi_1h": {"color": "red"},
+            },
+            "MACD": {
+                "macd": {"color": "blue"},
+                "macdsignal": {"color": "orange"},
+                "macdhist": {"color": "green", "type": "bar"},
+            },
+        },
     }
 
     # ------------------ Indicators ------------------
@@ -103,44 +131,32 @@ class SekkaLong(IStrategy):
         return vwap
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
+        # Single timeframe (1h) only - no multi-timeframe dependencies
+        # Use GENERAL_PERIOD for both RSI and VWAP
         period = self.GENERAL_PERIOD
-        
-        # Calculate indicators directly on spot data
         df["rsi_1h"] = ta.RSI(df, timeperiod=period)
         df["vwap_1h"] = self.compute_vwap(df, period)
         df["vwap_gap_1h"] = np.where(df["vwap_1h"] > 0, (df["close"] / df["vwap_1h"]) - 1.0, 0.0)
-        
+        # EMAs
+        #df["ema_fast"] = ta.EMA(df, timeperiod=6)
+        #df["ema_slow"] = ta.EMA(df, timeperiod=24)
+
+        # MACD
+        #macd = ta.MACD(df)
+        #df["macd"] = macd["macd"]
+        #df["macdsignal"] = macd["macdsignal"]
+        #df["macdhist"] = macd["macdhist"]
         return df
 
     # Freqtrade 2025.10+ requires populate_entry_trend/populate_exit_trend
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         df["enter_long"] = 0
         df.loc[
-            (df["rsi_1h"] <= self.ENTRY_RSI) 
-            & (df["vwap_gap_1h"] < self.ENTRY_VWAP_GAP),
+            (df["rsi_1h"] <= self.ENTRY_RSI.value) 
+            & (df["vwap_gap_1h"] < self.ENTRY_VWAP_GAP.value),
             "enter_long",
         ] = 1
         return df
-
-    def confirm_trade_entry(self, pair: str, order_type: str, amount: float, 
-                            rate: float, time_in_force: str, current_time, 
-                            entry_tag, side: str, **kwargs) -> bool:
-        """
-        Block entry if pair is in cooldown after STOP_LOSS_AFTER_DCA.
-        """
-        if self._stoploss_cooldown is None:
-            self._stoploss_cooldown = {}
-        
-        cooldown_until = self._stoploss_cooldown.get(pair)
-        if cooldown_until and current_time < cooldown_until:
-            self.logger.info(f"[{pair}] Entry blocked - cooldown until {cooldown_until}")
-            return False
-        
-        # Clear expired cooldown
-        if cooldown_until and current_time >= cooldown_until:
-            self._stoploss_cooldown.pop(pair, None)
-        
-        return True
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         df["exit_long"] = 0
@@ -157,7 +173,7 @@ class SekkaLong(IStrategy):
         stage = trade.nr_of_successful_entries if trade else 0
         
         # Total entries = DCA_STEP + 1 (Initial), since no cut loss, no need to add 1
-        total_steps = self.DCA_STEP
+        total_steps = self.DCA_STEP.value
 
         if stage == 0:
             stake = balance / total_steps
@@ -173,6 +189,7 @@ class SekkaLong(IStrategy):
 
     # ------------------ DCA Logic ------------------
     def adjust_trade_position(self, trade, current_time, current_rate, current_profit, **kwargs):
+        #self.logger.info(f"[{current_time}] {trade.pair} | DCA check stage={trade.nr_of_successful_entries}")
         if self._last_dca_stage is None:
             self._last_dca_stage = {}
 
@@ -184,12 +201,12 @@ class SekkaLong(IStrategy):
             return 0
         
         # Stop if we reached max entries (Initial + DCA_STEP)
-        if current_stage >= (self.DCA_STEP + 1):
+        if current_stage >= (self.DCA_STEP.value + 1):
             return 0
 
         avg_rate = trade.open_rate
         drop_ratio = (current_rate / avg_rate) - 1.0
-        next_dca_trigger = -self.DCA_THRESHOLD
+        next_dca_trigger = -self.DCA_THRESHOLD.value
 
         free_balance = self.wallets.get_available_stake_amount()
         est_stake = self.custom_stake_amount(trade.pair, current_time, current_rate, trade=trade)
@@ -198,6 +215,11 @@ class SekkaLong(IStrategy):
             next_stage = current_stage + 1
             tag = f"DCA_{next_stage}"
             self._last_dca_stage[trade_id] = current_stage
+
+            #self.logger.info(
+            #    f"[{current_time}] {trade.pair} | Triggering {tag} at {current_rate:.4f} "
+            #    f"({drop_ratio*100:.2f}%) | Free={free_balance:.2f} Stake={est_stake:.2f}"
+            #)
             trade.enter_tag = tag
             return est_stake  # ✅ FIXED: execute with actual stake
 
@@ -212,31 +234,22 @@ class SekkaLong(IStrategy):
         rel = (current_rate / avg_price) - 1.0
 
         # Get RSI from exit timeframe (matches --timeframe-detail)
-        #try:
-            #df, _ = self.dp.get_analyzed_dataframe(pair, self.EXIT_TIMEFRAME)
+        try:
+            df, _ = self.dp.get_analyzed_dataframe(pair, self.EXIT_TIMEFRAME)
             # Calculate RSI on the exit timeframe data
-            #import talib.abstract as ta_exit
-            #rsi_exit = ta_exit.RSI(df, timeperiod=self.GENERAL_PERIOD).iloc[-1]
-            #rsi_exit = 50
-        #except Exception:
-        #    rsi_exit = 50  # Default if unable to get RSI
+            import talib.abstract as ta_exit
+            rsi_exit = ta_exit.RSI(df, timeperiod=self.GENERAL_PERIOD).iloc[-1]
+        except Exception:
+            rsi_exit = 50  # Default if unable to get RSI
 
-        # Take profit based on price percentage & RSI
-        if rel >= self.TP_PERCENTAGE: # and rsi_exit >= self.TP_RSI:
+        # Take profit: price % AND RSI condition
+        if rel >= self.TP_PERCENTAGE.value and rsi_exit >= self.TP_RSI.value:
             return "TAKE_PROFIT"
 
-        # Stop loss after all DCAs are used
-        if dca_stage >= (self.DCA_STEP + 1) and rel <= -self.DCA_THRESHOLD:
-            self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
-            
-            # Set cooldown for this pair
-            if self._stoploss_cooldown is None:
-                self._stoploss_cooldown = {}
-            from datetime import timedelta
-            cooldown_until = current_time + timedelta(hours=self.COOLDOWN_HOURS)
-            self._stoploss_cooldown[pair] = cooldown_until
-            self.logger.info(f"[{pair}] STOP_LOSS_AFTER_DCA - cooldown until {cooldown_until}")
-            
-            return "STOP_LOSS_AFTER_DCA"
+        # Stop loss after all DCAs are used (if enabled)
+        if self.EXIT_AFTER_DCA.value:
+            if dca_stage >= (self.DCA_STEP.value + 1) and rel <= -self.DCA_THRESHOLD.value:
+                self._last_dca_stage.pop(f"{pair}_{trade.open_date}", None)
+                return "STOP_LOSS_AFTER_DCA"
 
         return None

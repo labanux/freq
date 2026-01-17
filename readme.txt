@@ -260,3 +260,21 @@ TP_THRESHOLD= 0.02
         "TP_PERCENTAGE": 0.01,
         "TP_RSI": 55,
     }
+
+Next: Remove cut loss or check RSI >80 but negative
+IN progress:
+- OptLong force leverage. But need to check does it still support read on spot and buy on futures?
+
+
+Loss Function	Description
+ShortTradesDurationHyperOptLoss	Minimize trade duration
+OnlyProfitHyperOptLoss	Maximize profit only
+SharpeHyperOptLoss	Maximize Sharpe ratio (risk-adjusted returns)
+SharpeHyperOptLossDaily	Daily Sharpe ratio
+SortinoHyperOptLoss	Maximize Sortino ratio (downside risk)
+SortinoHyperOptLossDaily	Daily Sortino ratio
+MaxDrawDownHyperOptLoss	Minimize max drawdown
+MaxDrawDownRelativeHyperOptLoss	Minimize relative drawdown
+CalmarHyperOptLoss	Maximize Calmar ratio (return/drawdown)
+ProfitDrawDownHyperOptLoss	Balance profit vs drawdown
+MultiMetricHyperOptLoss	Multiple metrics combined
