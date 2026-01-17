@@ -33,7 +33,7 @@ class OptLong(IStrategy):
     # ==============================================================
     
     # Buy parameters
-    DCA_STEP = CategoricalParameter([3, 5, 7, 10], default=5, space="buy", optimize=False)
+    DCA_STEP = CategoricalParameter([3, 5, 7, 10], default=5, space="buy", optimize=True)
     DCA_THRESHOLD = CategoricalParameter([0.02, 0.03, 0.04, 0.06, 0.08], default=0.02, space="buy", optimize=True)
     ENTRY_RSI = CategoricalParameter([35, 40, 45, 50], default=45, space="buy", optimize=True)
     ENTRY_VWAP_GAP = DecimalParameter(-0.05, -0.02, default=-0.05, decimals=2, space="buy", optimize=False)
