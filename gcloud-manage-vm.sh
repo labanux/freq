@@ -166,14 +166,64 @@ case "$COMMAND" in
                 echo 'ERROR: Failed to start screen session'
             fi
         "
-        echo -e "${GREEN}✓ Hyperopt started in background!${NC}"
-        echo ""
-        echo -e "Commands to monitor:"
-        echo -e "  ${YELLOW}./gcloud-manage-vm.sh check${NC}   - Check if running"
-        echo -e "  ${YELLOW}./gcloud-manage-vm.sh output${NC}  - View output log"
-        echo -e "  ${YELLOW}./gcloud-manage-vm.sh status${NC}  - Check VM status"
-        echo ""
-        echo -e "${GREEN}Note: VM will automatically stop after hyperopt completes.${NC}"
+        
+        # Wait a bit for hyperopt to initialize, then check for errors
+        echo -e "${YELLOW}Waiting for hyperopt to initialize (10 seconds)...${NC}"
+        sleep 10
+        
+        # Check if docker is running and log doesn't contain errors
+        RESULT=$(gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" -- "
+            DOCKER_RUNNING=\$(docker ps --format '{{.Image}}' 2>/dev/null | grep -c freqtrade || echo '0')
+            
+            # Check log for errors
+            if [ -f /opt/freqtrade/hyperopt.log ]; then
+                ERROR_LINES=\$(grep -i -E 'error|exception|failed|cannot|traceback' /opt/freqtrade/hyperopt.log 2>/dev/null | head -5)
+                if [ -n \"\$ERROR_LINES\" ]; then
+                    echo 'LOG_ERROR'
+                    echo \"\$ERROR_LINES\"
+                elif [ \"\$DOCKER_RUNNING\" -gt 0 ]; then
+                    echo 'SUCCESS'
+                else
+                    echo 'NO_DOCKER'
+                fi
+            else
+                echo 'NO_LOG'
+            fi
+        " 2>/dev/null)
+        
+        STATUS=$(echo "$RESULT" | head -1)
+        
+        case "$STATUS" in
+            SUCCESS)
+                echo -e "${GREEN}✓ Hyperopt started successfully!${NC}"
+                echo ""
+                echo -e "Commands to monitor:"
+                echo -e "  ${YELLOW}./gcloud-manage-vm.sh check${NC}   - Check if running"
+                echo -e "  ${YELLOW}./gcloud-manage-vm.sh output${NC}  - View output log"
+                echo -e "  ${YELLOW}./gcloud-manage-vm.sh progress${NC} - View epochs completed"
+                echo ""
+                echo -e "${GREEN}Note: VM will automatically stop after hyperopt completes.${NC}"
+                ;;
+            LOG_ERROR)
+                echo -e "${RED}✗ Hyperopt FAILED to start!${NC}"
+                echo ""
+                echo -e "${RED}Errors found in log:${NC}"
+                echo "$RESULT" | tail -n +2
+                echo ""
+                echo -e "Run ${YELLOW}./gcloud-manage-vm.sh output${NC} to see full log."
+                exit 1
+                ;;
+            NO_DOCKER)
+                echo -e "${RED}✗ Hyperopt process not running (Docker not active)${NC}"
+                echo ""
+                echo -e "Run ${YELLOW}./gcloud-manage-vm.sh output${NC} to see what happened."
+                exit 1
+                ;;
+            *)
+                echo -e "${YELLOW}⚠ Could not verify hyperopt status${NC}"
+                echo -e "Run ${YELLOW}./gcloud-manage-vm.sh check${NC} to verify manually."
+                ;;
+        esac
         ;;
     
     check)
