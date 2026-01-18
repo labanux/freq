@@ -42,7 +42,7 @@ class OptPerps(IStrategy):
     TP_PERCENTAGE = DecimalParameter(0.02, 0.05, default=0.02, decimals=2, space="sell", optimize=True)
     
     # Futures parameters
-    LEVERAGE = CategoricalParameter([1, 10, 20], default=1, space="buy", optimize=True)
+    LEVERAGE = CategoricalParameter([1, 3, 5], default=1, space="buy", optimize=True)
     
     # Fixed parameters
     GENERAL_PERIOD = 14
@@ -52,12 +52,24 @@ class OptPerps(IStrategy):
 
     minimal_roi = {}  # We use custom_exit instead
     
-    # Stoploss - optimizable
-    stoploss = DecimalParameter(-0.50, -0.10, default=-0.25, decimals=2, space="stoploss", optimize=True)
+    # Static stoploss fallback (will be overridden by custom_stoploss)
+    stoploss = -0.99
+    use_custom_stoploss = True
+    
+    # Optimizable stoploss parameter
+    STOPLOSS_PCT = DecimalParameter(-0.70, -0.10, default=-0.50, decimals=2, space="stoploss", optimize=True)
 
     logger = logging.getLogger(__name__)
     _last_dca_stage = None
     _stoploss_cooldown = {}  # Track pairs in cooldown after STOP_LOSS_AFTER_DCA
+
+    # ------------------ Custom Stoploss ------------------
+    def custom_stoploss(self, pair: str, trade, current_time, current_rate,
+                        current_profit, after_fill, **kwargs) -> float:
+        """
+        Use the optimizable STOPLOSS_PCT parameter.
+        """
+        return self.STOPLOSS_PCT.value
 
     # ------------------ Informative Pairs ------------------
     def informative_pairs(self):
