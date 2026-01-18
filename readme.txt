@@ -263,7 +263,7 @@ TP_THRESHOLD= 0.02
 
 Next: Remove cut loss or check RSI >80 but negative
 IN progress:
-- OptLong force leverage. But need to check does it still support read on spot and buy on futures?
+- OptLong force leverage. Pair reduced to biggest pair only. But need to check does it still support read on spot and buy on futures?
 
 
 Loss Function	Description
@@ -278,3 +278,6 @@ MaxDrawDownRelativeHyperOptLoss	Minimize relative drawdown
 CalmarHyperOptLoss	Maximize Calmar ratio (return/drawdown)
 ProfitDrawDownHyperOptLoss	Balance profit vs drawdown
 MultiMetricHyperOptLoss	Multiple metrics combined
+
+SekkaPerps & OptPerp:
+- 

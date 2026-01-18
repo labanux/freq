@@ -1,8 +1,8 @@
 # ================================================================
-# SekkaLong – Production Strategy (Static Parameters)
+# SekkaPerps – Production Strategy for Futures (Static Parameters)
 # ---------------------------------------------------------------
-# Same logic as OptLong, but with static (non-optimizable) parameters.
-# Use this for live trading after optimizing with OptLong.
+# Same logic as SekkaLong, but configured for futures trading.
+# Use this for live futures trading.
 # ================================================================
 
 from freqtrade.strategy import IStrategy
@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import Optional
 
 
-class SekkaLong(IStrategy):
+class SekkaPerps(IStrategy):
     timeframe = "1h"
     informative_timeframes = []  # Single timeframe only - no multi-timeframe
     process_only_new_candles = True
@@ -42,8 +42,10 @@ class SekkaLong(IStrategy):
     # Sell parameters
     TP_PERCENTAGE = 0.02
 
+    # Futures settings
+    LEVERAGE = 3  # 3x leverage for futures
     COOLDOWN_HOURS = 24  # Hours to wait before re-entering after stop loss
-    stoploss = -0.7
+    stoploss = -0.25  # Tighter stoploss for leverage (25% = ~75% with 3x)
 
 
     # ==============================================================
@@ -65,10 +67,16 @@ class SekkaLong(IStrategy):
         for pair in pairs:
             # Add main timeframe (for entry indicators)
             informative_pairs.append((pair, self.timeframe))
-            # Add exit timeframe (for exit RSI calculation)
-            if self.EXIT_TIMEFRAME != self.timeframe:
-                informative_pairs.append((pair, self.EXIT_TIMEFRAME))
         return informative_pairs
+
+    # ------------------ Leverage (Futures) ------------------
+    def leverage(self, pair: str, current_time, current_rate: float,
+                 proposed_leverage: float, max_leverage: float,
+                 entry_tag: Optional[str], side: str, **kwargs) -> float:
+        """
+        Return the leverage to use for futures trading.
+        """
+        return float(self.LEVERAGE)
 
     # ------------------ Plot Config ------------------
     plot_config = {
@@ -104,7 +112,7 @@ class SekkaLong(IStrategy):
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         period = self.GENERAL_PERIOD
         
-        # Calculate indicators directly on spot data
+        # Calculate indicators on futures data
         df["rsi_1h"] = ta.RSI(df, timeperiod=period)
         df["vwap_1h"] = self.compute_vwap(df, period)
         df["vwap_gap_1h"] = np.where(df["vwap_1h"] > 0, (df["close"] / df["vwap_1h"]) - 1.0, 0.0)
