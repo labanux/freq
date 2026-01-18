@@ -44,7 +44,8 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --spaces)
-            SPACES="$2"
+            # Support both "buy sell" and "buy_sell" formats (underscores for SSH compatibility)
+            SPACES=$(echo "$2" | tr '_' ' ')
             shift 2
             ;;
         --timerange|-t)
@@ -89,7 +90,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --strategy, -s    Strategy name (default: OptLong)"
             echo "  --loss            Hyperopt loss function (default: ZeroLossMaxTrades)"
-            echo "  --spaces          Optimization spaces (default: buy sell)"
+            echo "  --spaces          Optimization spaces: buy_sell or buy_sell_stoploss"
             echo "  --timerange, -t   Time range (default: 20220101-20251230)"
             echo "  --config, -c      Config file (default: user_data/config-long.json)"
             echo "  --epochs, -e      Number of epochs (default: 2000)"
