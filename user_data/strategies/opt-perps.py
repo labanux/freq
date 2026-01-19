@@ -36,7 +36,7 @@ class OptPerps(IStrategy):
     DCA_STEP = CategoricalParameter([1, 3, 5], default=5, space="buy", optimize=True)
     DCA_THRESHOLD = CategoricalParameter([0.03, 0.04,0.05, 0.06], default=0.03, space="buy", optimize=True)
     ENTRY_RSI = CategoricalParameter([35, 40, 45, 50, 55, 60], default=40, space="buy", optimize=True)
-    ENTRY_VWAP_GAP = DecimalParameter(-0.08, -0.03, default=-0.05, decimals=2, space="buy", optimize=False)
+    ENTRY_VWAP_GAP = DecimalParameter(-0.05, -0.02, default=-0.03, decimals=2, space="buy", optimize=True)
     
     # Sell parameters
     TP_PERCENTAGE = DecimalParameter(0.02, 0.05, default=0.02, decimals=2, space="sell", optimize=True)
