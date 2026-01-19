@@ -137,16 +137,16 @@ class OptLong(IStrategy):
         trade = kwargs.get("trade", None)
         stage = trade.nr_of_successful_entries if trade else 0
         
-        # Total entries = DCA_STEP (no +1 since we count from 0)
-        total_steps = self.DCA_STEP.value
+        # Total entries = 1 initial + DCA_STEP DCAs
+        total_entries = self.DCA_STEP.value + 1
 
         if stage == 0:
-            stake = balance / total_steps
+            stake = balance / total_entries
         else:
-            # Remaining steps including this one
-            remaining_steps = total_steps - stage
-            if remaining_steps > 0:
-                stake = remaining / remaining_steps
+            # Remaining entries including this one
+            remaining_entries = total_entries - stage
+            if remaining_entries > 0:
+                stake = remaining / remaining_entries
             else:
                 stake = 0
 

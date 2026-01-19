@@ -33,16 +33,16 @@ class OptPerps(IStrategy):
     # ==============================================================
     
     # Buy parameters
-    DCA_STEP = CategoricalParameter([1, 3, 5, 10], default=5, space="buy", optimize=True)
-    DCA_THRESHOLD = CategoricalParameter([0.02, 0.03, 0.05, 0.06, 0.08], default=0.03, space="buy", optimize=False)
-    ENTRY_RSI = CategoricalParameter([20, 25, 30, 35, 40, 45, 50], default=40, space="buy", optimize=True)
+    DCA_STEP = CategoricalParameter([1, 3, 5], default=5, space="buy", optimize=True)
+    DCA_THRESHOLD = CategoricalParameter([0.03, 0.04,0.05, 0.06], default=0.03, space="buy", optimize=True)
+    ENTRY_RSI = CategoricalParameter([35, 40, 45, 50, 55, 60], default=40, space="buy", optimize=True)
     ENTRY_VWAP_GAP = DecimalParameter(-0.08, -0.03, default=-0.05, decimals=2, space="buy", optimize=False)
     
     # Sell parameters
     TP_PERCENTAGE = DecimalParameter(0.02, 0.05, default=0.02, decimals=2, space="sell", optimize=True)
     
-    # Futures parameters
-    LEVERAGE = CategoricalParameter([1, 3, 5], default=1, space="buy", optimize=True)
+    # Futures parameters: FALSE
+    LEVERAGE = CategoricalParameter([1, 3, 5], default=1, space="buy", optimize=False)
     
     # Fixed parameters
     GENERAL_PERIOD = 14
@@ -51,10 +51,7 @@ class OptPerps(IStrategy):
     # ==============================================================
 
     minimal_roi = {}  # We use custom_exit instead
-    
-    # Stoploss - optimized via --spaces stoploss
-    # Hyperopt will search in range defined by stoploss_space
-    stoploss = -0.25
+    stoploss = -0.20
 
     logger = logging.getLogger(__name__)
     _last_dca_stage = None
@@ -150,16 +147,16 @@ class OptPerps(IStrategy):
         trade = kwargs.get("trade", None)
         stage = trade.nr_of_successful_entries if trade else 0
         
-        # Total entries = DCA_STEP (no +1 since we count from 0)
-        total_steps = self.DCA_STEP.value
+        # Total entries = 1 initial + DCA_STEP DCAs
+        total_entries = self.DCA_STEP.value + 1
 
         if stage == 0:
-            stake = balance / total_steps
+            stake = balance / total_entries
         else:
-            # Remaining steps including this one
-            remaining_steps = total_steps - stage
-            if remaining_steps > 0:
-                stake = remaining / remaining_steps
+            # Remaining entries including this one
+            remaining_entries = total_entries - stage
+            if remaining_entries > 0:
+                stake = remaining / remaining_entries
             else:
                 stake = 0
 

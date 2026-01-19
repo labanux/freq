@@ -33,9 +33,9 @@ class SekkaPerps(IStrategy):
     # ==============================================================
     
     # Buy parameters
-    DCA_STEP = 7
-    DCA_THRESHOLD = 0.04
-    ENTRY_RSI = 40
+    DCA_STEP = 10
+    DCA_THRESHOLD = 0.03
+    ENTRY_RSI = 50
     ENTRY_VWAP_GAP = -0.05
     GENERAL_PERIOD = 14
 
@@ -43,7 +43,7 @@ class SekkaPerps(IStrategy):
     TP_PERCENTAGE = 0.02
 
     # Futures settings
-    LEVERAGE = 3  # 3x leverage for futures
+    LEVERAGE = 1  # 3x leverage for futures
     COOLDOWN_HOURS = 24  # Hours to wait before re-entering after stop loss
     stoploss = -0.25  # Tighter stoploss for leverage (25% = ~75% with 3x)
 
@@ -163,16 +163,16 @@ class SekkaPerps(IStrategy):
         trade = kwargs.get("trade", None)
         stage = trade.nr_of_successful_entries if trade else 0
         
-        # Total entries = DCA_STEP + 1 (Initial), since no cut loss, no need to add 1
-        total_steps = self.DCA_STEP
+        # Total entries = 1 initial + DCA_STEP DCAs
+        total_entries = self.DCA_STEP + 1
 
         if stage == 0:
-            stake = balance / total_steps
+            stake = balance / total_entries
         else:
-            # Remaining steps including this one
-            remaining_steps = total_steps - stage
-            if remaining_steps > 0:
-                stake = remaining / remaining_steps
+            # Remaining entries including this one
+            remaining_entries = total_entries - stage
+            if remaining_entries > 0:
+                stake = remaining / remaining_entries
             else:
                 stake = 0
 
