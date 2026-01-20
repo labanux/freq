@@ -12,13 +12,13 @@
     "pair_whitelist": [
       "BTC/USDT:USDT",
       "ETH/USDT:USDT",
-      "XRP/USDT:USDT",
       "SOL/USDT:USDT",
+      "XRP/USDT:USDT",
       "BNB/USDT:USDT",
       "LTC/USDT:USDT"
     ]
   },
-  "max_open_trades": 6,
+  "max_open_trades": 10,
   "telegram": {
     "enabled": true,
     "token": "",
