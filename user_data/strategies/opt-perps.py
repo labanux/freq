@@ -35,18 +35,18 @@ class OptPerps(IStrategy):
     # Buy parameters
     DCA_STEP = CategoricalParameter([1, 3, 5], default=5, space="buy", optimize=True)
     DCA_THRESHOLD = CategoricalParameter([0.03, 0.04,0.05, 0.06], default=0.03, space="buy", optimize=True)
-    ENTRY_RSI = CategoricalParameter([35, 40, 45, 50, 55, 60], default=40, space="buy", optimize=True)
+    ENTRY_RSI = CategoricalParameter([45, 50, 55, 60, 65], default=40, space="buy", optimize=True)
     ENTRY_VWAP_GAP = DecimalParameter(-0.05, -0.02, default=-0.03, decimals=2, space="buy", optimize=True)
     
     # Sell parameters
-    TP_PERCENTAGE = DecimalParameter(0.02, 0.05, default=0.02, decimals=2, space="sell", optimize=True)
+    TP_PERCENTAGE = DecimalParameter(0.01, 0.05, default=0.02, decimals=2, space="sell", optimize=True)
     
     # Futures parameters: FALSE
     LEVERAGE = CategoricalParameter([1, 3, 5], default=1, space="buy", optimize=False)
     
     # Fixed parameters
     GENERAL_PERIOD = 14
-    COOLDOWN_HOURS = 24  # Hours to wait before re-entering after stop loss
+    COOLDOWN_HOURS = 6  # Hours to wait before re-entering after stop loss
 
     # ==============================================================
 
