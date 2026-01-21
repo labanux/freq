@@ -13,9 +13,10 @@ docker exec -it freqtrade freqtrade download-data \
 docker exec -it freqtrade freqtrade download-data \
   --exchange binance \
   --trading-mode futures \
-  --pairs SOL/USDT:USDT BTC/USDT:USDT XRP/USDT:USDT LTC/USDT:USDT ETH/USDT:USDT ENA/USDT:USDT ZEC/USDT:USDT \
-  --timeframes 1d \
-  --timerange 20220101-20251230 --erase
+  --timeframes 5m \
+  --timerange 20211229-20260105 \
+  --pairs ADA/USDT:USDT DOGE/USDT:USDT SOL/USDT:USDT BTC/USDT:USDT XRP/USDT:USDT LTC/USDT:USDT ETH/USDT:USDT ENA/USDT:USDT ZEC/USDT:USDT
+  --erase
 
 # DOWNLOAD spot Hyperliquid
 docker exec -it freqtrade python3 /freqtrade/user_data/strategies/download_hl.py
@@ -278,6 +279,3 @@ MaxDrawDownRelativeHyperOptLoss	Minimize relative drawdown
 CalmarHyperOptLoss	Maximize Calmar ratio (return/drawdown)
 ProfitDrawDownHyperOptLoss	Balance profit vs drawdown
 MultiMetricHyperOptLoss	Multiple metrics combined
-
-SekkaPerps & OptPerp:
-- 
